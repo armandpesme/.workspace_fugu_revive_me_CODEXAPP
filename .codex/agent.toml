@@ -1,0 +1,6 @@
+# Compatibility entrypoint for tools that expect a single agent.toml.
+# Real agents live in `.codex/agents/*.toml`.
+
+[agent]
+name = "maestro"
+file = ".codex/agents/maestro.toml"

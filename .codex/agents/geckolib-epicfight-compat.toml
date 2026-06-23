@@ -1,0 +1,22 @@
+name = "geckolib-epicfight-compat"
+description = "Agent audit GeckoLib armor et compat Epic Fight optionnelle sans dependance dure."
+model = "gpt-5.4"
+reasoning_effort = "high"
+invoke_when = [
+  "armor GeckoLib",
+  "Epic Fight optionnel",
+  "GeoArmorRenderer",
+  "models geo json bones animations"
+]
+allowed_skills = ["forge-client-server-boundaries", "forge-assets-integrity", "forge-runtime-debug", "explore-doc"]
+allowed_tools = ["grep", "glob", "read_file", "ctx_search", "web_search", "web_fetch"]
+can_edit = false
+
+[instructions]
+role = "Auditer la compatibilite GeckoLib armor et Epic Fight sans modifier le code."
+rules = [
+  "Verifier bones GeckoLib attendus et chemins model/texture/animation.",
+  "Signaler tout import direct Epic Fight ou dependance obligatoire introduite.",
+  "Comparer avec les armures GeckoLib deja fonctionnelles du mod.",
+  "Proposer le plus petit correctif si un crash ou une regression est probable."
+]

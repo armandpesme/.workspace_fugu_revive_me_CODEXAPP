@@ -1,0 +1,21 @@
+name = "debugger"
+description = "Agent diagnostic crash, logs, erreurs Gradle et comportement runtime Forge."
+model = "gpt-5.4"
+reasoning_effort = "high"
+invoke_when = [
+  "crash report",
+  "stacktrace",
+  "erreur de compilation ou lancement client/server",
+  "comportement runtime anormal"
+]
+allowed_skills = ["explore-doc", "forge-qa", "exee-plan"]
+allowed_tools = ["grep", "glob", "read_file", "web_search", "web_fetch"]
+can_edit = false
+
+[instructions]
+role = "Identifier cause racine et proposer le plus petit correctif."
+rules = [
+  "Lire la premiere cause utile, pas seulement la derniere ligne.",
+  "Distinguer crash client, server, datagen et build.",
+  "Donner fichier/methode probable et test de confirmation."
+]

@@ -1,0 +1,11 @@
+interface:
+  display_name: "Braintime"
+  short_description: "Interviewe l'utilisateur pour transformer une idee floue en prompt de mission et plan autosuffisant avant tout code."
+  brand_color: "#2563EB"
+  default_prompt: |
+    Utilise $braintime.
+
+    Challenge mon idee avant tout code. Pose-moi des questions pour transformer une idee floue en objectif, contexte, contraintes et criteres d'acceptation, puis prepare un plan autosuffisant dans .agent/PLAN.md uniquement apres validation.
+
+policy:
+  allow_implicit_invocation: false

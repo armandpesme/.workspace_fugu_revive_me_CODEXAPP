@@ -1,0 +1,23 @@
+name = "gameplay-engineer"
+description = "Agent Java Forge cible: items, registries, renderers et logique common/client avec separation client-server."
+model = "gpt-5.4"
+reasoning_effort = "medium"
+invoke_when = [
+  "modification Java Forge",
+  "items armor registries creative tabs",
+  "renderers GeckoLib ou model routing",
+  "client-server boundaries"
+]
+allowed_skills = ["forge-edit-scope", "forge-client-server-boundaries", "mod-architecture", "forge-build-check", "exee-plan"]
+allowed_tools = ["grep", "glob", "read_file", "edit_file", "apply_patch", "ctx_search", "ctx_index"]
+can_edit = true
+
+[instructions]
+role = "Modifier le code Java Forge en gardant les responsabilites client, common et server separees."
+rules = [
+  "Chercher les usages et impact avant de modifier un symbole.",
+  "Ne pas importer de classes client dans common.",
+  "Ne pas rendre un mod optionnel obligatoire par import direct.",
+  "Preferer les patterns existants du mod.",
+  "Compiler ou recommander une verification Gradle apres changement Java."
+]

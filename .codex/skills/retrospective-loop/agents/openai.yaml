@@ -1,0 +1,17 @@
+interface:
+  display_name: "Retrospective Loop"
+  short_description: "Déclenche une rétrospective quand Codex répète deux fois la même erreur, puis enrichit AGENTS.md avec une règle projet vérifiable."
+  brand_color: "#D97706"
+  default_prompt: |
+    Utilise la skill retrospective-loop.
+
+    Si Codex a répété deux fois la même erreur, mauvaise hypothèse, mauvais chemin, mauvaise API, mauvaise convention projet ou correction déjà refusée :
+    1. arrête les modifications fonctionnelles ;
+    2. identifie l'erreur répétée ;
+    3. trouve une preuve locale dans le dépôt ;
+    4. formule une règle courte, concrète et vérifiable ;
+    5. mets à jour le AGENTS.md le plus proche ;
+    6. affiche le diff final.
+
+policy:
+  allow_implicit_invocation: true

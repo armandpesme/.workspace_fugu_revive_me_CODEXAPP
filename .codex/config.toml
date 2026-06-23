@@ -1,0 +1,72 @@
+# Codex local workspace configuration for Minecraft Forge 1.20.1.
+# Priority: human instruction > this file > AGENTS.md > global user config.
+
+
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_root_markers = ["AGENTS.md", "project-gradle", ".git"]
+project_doc_max_bytes = 24000
+web_search = "cached"
+
+[sandbox_workspace_write]
+network_access = true
+
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+
+[mcp_servers.gitnexus]
+command = "gitnexus"
+args = ["mcp"]
+startup_timeout_sec = 30.0
+tool_timeout_sec = 120.0
+required = false
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+startup_timeout_sec = 60.0
+tool_timeout_sec = 120.0
+required = false
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+startup_timeout_sec = 60.0
+tool_timeout_sec = 120.0
+required = false
+env_vars = ["CONTEXT7_API_KEY"]
+
+[skills]
+config = [
+  { path = "../.agents/skills/braintime", enabled = true },
+  { path = "../.agents/skills/context7-mcp", enabled = true },
+  { path = "../.agents/skills/forge-workspace-onboarding", enabled = true },
+  { path = "../.agents/skills/forge-edit-scope", enabled = true },
+  { path = "../.agents/skills/forge-client-server-boundaries", enabled = true },
+  { path = "../.agents/skills/forge-assets-integrity", enabled = true },
+  { path = "../.agents/skills/forge-mixin-safety", enabled = true },
+  { path = "../.agents/skills/forge-runtime-debug", enabled = true },
+  { path = "../.agents/skills/minecraft-log-tools", enabled = true },
+  { path = "../.agents/skills/explore-doc", enabled = true },
+  { path = "../.agents/skills/mod-architecture", enabled = true },
+  { path = "../.agents/skills/forge-build-check", enabled = true },
+  { path = "../.agents/skills/forge-qa", enabled = true },
+  { path = "../.agents/skills/forge-armor-variant-port", enabled = true },
+  { path = "../.agents/skills/exee-plan", enabled = true },
+  { path = "../.agents/skills/workspace-agent-skill-maintenance", enabled = true },
+  { path = "../.agents/skills/retrospective-loop", enabled = true },
+  { path = "../.agents/skills/gitnexus-cli", enabled = true },
+  { path = "../.agents/skills/gitnexus-guide", enabled = true },
+  { path = "../.agents/skills/gitnexus-exploring", enabled = true },
+  { path = "../.agents/skills/gitnexus-debugging", enabled = true },
+  { path = "../.agents/skills/gitnexus-impact-analysis", enabled = true },
+  { path = "../.agents/skills/gitnexus-refactoring", enabled = true },
+  { path = "../.agents/skills/jq-json-patch", enabled = true },
+  { path = "../.agents/skills/multi-format-patch", enabled = true },
+  { path = "../.agents/skills/py-complex-patch", enabled = true }
+]
+
+[prompts]
+dir = ".codex/prompts"

@@ -1,0 +1,33 @@
+---
+name: gh-address-comments
+description: >-
+  Aider à adresser les commentaires de review/issue sur la PR GitHub ouverte
+  pour la branche courante en utilisant gh CLI ; vérifier gh auth d'abord et
+  inviter l'utilisateur à s'authentifier si nécessaire. Compatible GitHub
+  Copilot, OpenCode, Anti-Gravity et Codex.
+license: MIT
+compatibility: copilot,opencode,antigravity,codex
+metadata:
+  short-description: Address comments in a GitHub PR review
+  source: openai/skills
+  adapted-for: forge-minecraft
+---
+
+# PR Comment Handler
+
+Guide to find the open PR for the current branch and address its comments with gh CLI. Run all `gh` commands with elevated network access.
+
+Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), then run `gh auth status` with escalated permissions (include workflow/repo scopes) so `gh` commands succeed. If sandboxing blocks `gh auth status`, rerun it with `sandbox_permissions=require_escalated`.
+
+## 1) Inspect comments needing attention
+- Run scripts/fetch_comments.py which will print out all the comments and review threads on the PR
+
+## 2) Ask the user for clarification
+- Number all the review threads and comments and provide a short summary of what would be required to apply a fix for it
+- Ask the user which numbered comments should be addressed
+
+## 3) If user chooses comments
+- Apply fixes for the selected comments
+
+Notes:
+- If gh hits auth/rate issues mid-run, prompt the user to re-authenticate with `gh auth login`, then retry.

@@ -1,0 +1,20 @@
+name = "asset-manager"
+description = "Agent assets et data Forge: lang, recipes, loot tables, tags, datagen."
+model = "gpt-5.4"
+reasoning_effort = "medium"
+invoke_when = [
+  "ajout ou correction de ressources JSON",
+  "datagen providers",
+  "lang files, tags, recipes, loot tables, models"
+]
+allowed_skills = ["mod-architecture", "forge-qa", "exee-plan"]
+allowed_tools = ["grep", "glob", "read_file", "edit_file", "apply_patch"]
+can_edit = true
+
+[instructions]
+role = "Garder les ressources coherentes avec le mod id et les registries."
+rules = [
+  "Valider le JSON et les chemins.",
+  "Verifier correspondance registry name / lang key / model path.",
+  "Preferer datagen quand le projet l'utilise deja."
+]

@@ -10,27 +10,35 @@
 - Fait : worktree créé sur `codex/fugu-revive-me-v1`.
 - Fait : test Gradle initial réussi (`test NO-SOURCE`).
 - Fait : index GitNexus dédié au worktree créé sous `.workspace_fugu_revive_me_CODEXAPP-v1`.
-- En cours : Jalon 1 — fondation Forge et configuration.
-- Reste : Jalons 2 à 7, revues, QA runtime et release `1.0.1`.
+- Fait : Jalon 1 — fondation Forge et configuration, double revue validée.
+- En cours : Jalon 2 — persistance SavedData et réseau.
+- Reste : Jalons 3 à 7, revues, QA runtime et release `1.0.1`.
 
 ### Surprises et discovery
 
 - Le MDK de baseline ne contient finalement aucun fichier Java, uniquement Gradle et les ressources Forge minimales.
 - L’index GitNexus doit être relancé après chaque jalon majeur pour connaître les nouveaux symboles.
+- La première revue qualité a détecté l’icône d’effet manquante et un warning d’overlap non branché; les deux défauts sont corrigés et couverts par tests.
+- Forge 47.4.20 accepte l’injection directe de `FMLJavaModLoadingContext` dans le constructeur `@Mod`.
 
 ### Decision log
 
 - 2026-06-28 / Baseline : conserver l’ensemble du snapshot humain validé, puis isoler l’implémentation dans un worktree.
 - 2026-06-28 / GitNexus : utiliser `--index-only` pour ne pas modifier automatiquement les documents protégés.
+- 2026-06-28 / Configuration : matérialiser les valeurs serveur dans un snapshot immuable remplacé atomiquement lors des chargements/rechargements.
+- 2026-06-28 / Assets : fournir immédiatement l’icône de tout effet visible enregistré et vérifier son intégrité dans le JAR.
 
 ### Outcome et retrospective
 
 - `.\gradlew.bat test` exécuté depuis le worktree `project-gradle/` : `BUILD SUCCESSFUL in 11s`, aucune source de test ou Java présente.
-- Aucun code métier n’a encore été ajouté.
+- Jalon 1 : `.\gradlew.bat test --rerun-tasks` et `.\gradlew.bat build --rerun-tasks` réussis; 23 tests, aucun échec.
+- Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` et `fugu_revive_me-1.0.1-sources.jar`.
+- Revues : conformité validée; qualité validée après corrections, aucun problème restant.
+- Risque restant : avertissement générique ForgeGradle sur une future incompatibilité Gradle 9, sans effet sur Gradle 8.8.
 
 ### Reprise agent sans état
 
-Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : déléguer le Jalon 1 à un agent architecte, avec TDD, identité `fugu_revive_me`, package `com.fuguteams.fugureviveme`, configuration serveur et assets de registre minimaux.
+Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus au commit du Jalon 1, analyser l’impact des nouveaux symboles puis déléguer le Jalon 2 à un agent réseau pour `ReviveState`, `KoRecord`, `KnockoutSavedData`, la file d’échéances et les packets sans trafic par tick.
 
 ## 1. Résumé
 

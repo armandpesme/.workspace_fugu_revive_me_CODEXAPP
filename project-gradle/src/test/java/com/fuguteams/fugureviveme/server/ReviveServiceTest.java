@@ -2,6 +2,7 @@ package com.fuguteams.fugureviveme.server;
 
 import com.fuguteams.fugureviveme.network.ClientboundReviveSnapshot;
 import com.fuguteams.fugureviveme.network.ClientboundTrackedKoVisual;
+import com.fuguteams.fugureviveme.state.BiomeKoClassifier;
 import com.fuguteams.fugureviveme.state.KnockoutSavedData;
 import com.fuguteams.fugureviveme.state.KoRecord;
 import com.fuguteams.fugureviveme.state.ReviveState;
@@ -86,6 +87,175 @@ class ReviveServiceTest {
                 .findFirst()
                 .orElseThrow();
         assertEquals(42, visual.entityId());
+    }
+
+    @Test
+    void tryEnterKnockoutCreatesTemporaryRecordAndPublishesWhenBiomeEligible() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        long[] clock = {1_000L};
+        ReviveService service = new ReviveService(
+                () -> data,
+                () -> clock[0],
+                new ReviveSyncService(sink),
+                ignored -> OptionalInt.of(13));
+
+        Optional<KoRecord> created = service.tryEnterKnockoutOnDeath(
+                player,
+                ResourceLocation.parse("minecraft:overworld"),
+                new BlockPos(10, 64, 10),
+                BiomeKoClassifier.KoType.TEMPORARY,
+                false,
+                Optional.empty(),
+                1_200,
+                3);
+
+        assertTrue(created.isPresent());
+        assertEquals(ReviveState.TEMPORARY_KO, data.get(player).orElseThrow().state());
+        assertEquals(2_200L, data.get(player).orElseThrow().deadlineGameTime());
+        assertEquals(2, sink.messages.size());
+        assertEquals(13, sink.trackedVisuals().get(0).entityId());
+    }
+
+    @Test
+    void tryEnterKnockoutRejectsWhenResurrectionSicknessIsActive() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+
+        Optional<KoRecord> created = service.tryEnterKnockoutOnDeath(
+                player,
+                ResourceLocation.parse("minecraft:overworld"),
+                BlockPos.ZERO,
+                BiomeKoClassifier.KoType.TEMPORARY,
+                true,
+                Optional.empty(),
+                1_200,
+                3);
+
+        assertTrue(created.isEmpty());
+        assertTrue(data.get(player).isEmpty());
+        assertTrue(sink.messages.isEmpty());
+    }
+
+    @Test
+    void tryEnterKnockoutRejectsNonEligibleBiome() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+
+        Optional<KoRecord> created = service.tryEnterKnockoutOnDeath(
+                player,
+                ResourceLocation.parse("minecraft:overworld"),
+                BlockPos.ZERO,
+                BiomeKoClassifier.KoType.NONE,
+                false,
+                Optional.empty(),
+                1_200,
+                3);
+
+        assertTrue(created.isEmpty());
+        assertTrue(data.get(player).isEmpty());
+    }
+
+    @Test
+    void applyKnockoutHitIncrementsCounterAndKeepsStateBeforeMaxHits() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+        data.put(player, new KoRecord(
+                ReviveState.TEMPORARY_KO, 1_000L, 0,
+                ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
+        data.setDirty(false);
+
+        Optional<KoRecord> next = service.applyKnockoutHit(player, 3);
+
+        assertTrue(next.isPresent());
+        assertEquals(1, next.get().hitsTaken());
+        assertEquals(ReviveState.TEMPORARY_KO, next.get().state());
+        assertEquals(1, sink.messages.size());
+    }
+
+    @Test
+    void applyKnockoutHitTransitionsToFullyDownedAtMax() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+        data.put(player, new KoRecord(
+                ReviveState.TEMPORARY_KO, 1_000L, 2,
+                ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
+
+        Optional<KoRecord> next = service.applyKnockoutHit(player, 3);
+
+        assertTrue(next.isPresent());
+        assertEquals(ReviveState.FULLY_DOWNED, next.get().state());
+        assertEquals(1_000L + KnockoutStateLogic.FULLY_DOWNED_EXTENSION_TICKS,
+                next.get().deadlineGameTime());
+    }
+
+    @Test
+    void applyKnockoutHitIsNoOpOnFullyDowned() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+        data.put(player, new KoRecord(
+                ReviveState.FULLY_DOWNED, 1_000L, 3,
+                ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
+        sink.messages.clear();
+        data.setDirty(false);
+
+        Optional<KoRecord> next = service.applyKnockoutHit(player, 3);
+
+        assertTrue(next.isEmpty());
+        assertTrue(sink.messages.isEmpty());
+        assertFalse(data.isDirty());
+    }
+
+    @Test
+    void transitionToAliveRemovesRecordAndNotifiesClient() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 1_000L, new ReviveSyncService(sink));
+        data.put(player, new KoRecord(
+                ReviveState.TEMPORARY_KO, 2_000L, 0,
+                ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
+        sink.messages.clear();
+
+        service.transitionToAlive(player);
+
+        assertTrue(data.get(player).isEmpty());
+        assertEquals(1, sink.messages.size());
+        assertInstanceOf(ClientboundReviveSnapshot.class, sink.messages.get(0));
+    }
+
+    @Test
+    void updateRecordPersistsAndPublishes() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        UUID player = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+        KoRecord next = new KoRecord(
+                ReviveState.TEMPORARY_KO, 1_000L, 0,
+                ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty());
+
+        service.updateRecord(player, next);
+
+        assertEquals(next, data.get(player).orElseThrow());
+        assertEquals(1, sink.messages.size());
     }
 
     private static final class RecordingSink implements PacketSink {

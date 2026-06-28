@@ -12,8 +12,9 @@
 - Fait : index GitNexus dédié au worktree créé sous `.workspace_fugu_revive_me_CODEXAPP-v1`.
 - Fait : Jalon 1 — fondation Forge et configuration, double revue validée.
 - Fait : Jalon 2 — persistance SavedData clairsemée, réseau Forge, snapshots client et tests, double revue validée puis corrections qualité appliquées.
-- En cours : préparation Jalon 3 — mort définitive et K.O. temporaire.
-- Reste : Jalons 3 à 7, revues, QA runtime et release `1.0.1`.
+- Fait : Jalon 3 — interception de la mort, K.O. temporaire, restrictions serveur, relève alliée, Ancre d’Âme et respawn générique, double revue à planifier.
+- En cours : préparation Jalon 4 — K.O. prolongé, recherche de boss taggé, respawn position K.O.
+- Reste : Jalons 4 à 7, revues, QA runtime et release `1.0.1`.
 
 ### Surprises et discovery
 
@@ -23,6 +24,10 @@
 - Forge 47.4.20 accepte l’injection directe de `FMLJavaModLoadingContext` dans le constructeur `@Mod`.
 - Les tests JUnit purs ne peuvent pas instancier un `SimpleChannel` Forge sans bus Forge complet; le channel réseau est donc initialisé lazy en runtime et vérifié par compilation/build + garde-fous source.
 - `ClientboundTrackedKoVisual` ne doit jamais être envoyé avec `entityId=0` par défaut; quand l’entityId n’est pas connu, le service envoie seulement le snapshot self.
+- 2026-06-28 / Jalon 3 : `LivingEntityUseItemEvent.Start` est l’event Forge 1.20.1 équivalent à `UseItemEvent.Start`; `net.minecraftforge.event.entity.player.UseItemEvent` n’existe pas.
+- 2026-06-28 / Jalon 3 : `ServerTickEvent.phase` est un champ, pas une méthode (`event.phase != TickEvent.Phase.END`).
+- 2026-06-28 / Jalon 3 : `EntityType` doit être importé de `net.minecraft.world.entity.EntityType` (et non de `Entity`); le tag est résolu via `TagKey.create(Registries.ENTITY_TYPE, id)`.
+- 2026-06-28 / Jalon 3 : `ServerPlayer#teleportTo(ServerLevel, double, double, double, float, float)` retourne `void`, pas `boolean`.
 
 ### Decision log
 
@@ -33,6 +38,12 @@
 - 2026-06-28 / Jalon 2 : encoder l’issue différée via les états persistants `PENDING_DEATH` / `PENDING_REVIVE` plutôt qu’un champ séparé, afin de garder `KoRecord` compact.
 - 2026-06-28 / Jalon 2 : isoler les handlers client via `DistExecutor` et réflexion contrôlée, sans import du package client depuis le réseau common, pour réduire le risque dedicated server.
 - 2026-06-28 / Jalon 2 : exposer un lookup optionnel `UUID -> entityId` dans `ReviveService` pour envoyer les visuals tracking seulement quand l’entité est connue.
+- 2026-06-28 / Jalon 3 : découper l’orchestration en services purs testables (`KnockoutStateLogic`, `AllyReviveLogic`, `SoulAnchorLogic`) et services d’orchestration (`ReviveService`, `AllyReviveService`, `SoulAnchorService`) branchés par `KoEventHandlers` côté DEDICATED_SERVER uniquement.
+- 2026-06-28 / Jalon 3 : les actions de revive (relève alliée, ancre) sont gérées en mémoire par `KnockoutActionRegistry`; aucune persistance disque, ce qui simplifie la reprise après un restart serveur et reste cohérent avec le statut “live interaction”.
+- 2026-06-28 / Jalon 3 : la restriction de vitesse K.O. utilise une `MovementOverrideRegistry` qui stocke la valeur originale de l’attribut MOVEMENT_SPEED et la restaure à la sortie du K.O.; le `PlayerTickEvent` (Phase.END) est utilisé pour appliquer la valeur.
+- 2026-06-28 / Jalon 3 : le `FuguKnockoutRuntime` est construit lors de `ServerStartedEvent` (bus FORGE) et expose les singletons aux handlers; il est reset entre deux sessions de jeu.
+- 2026-06-28 / Jalon 3 : le `KnockoutRespawnService.shouldTransfer` n’accepte que PENDING_DEATH, PENDING_REVIVE et DEAD_PENDING_TRANSFER (les autres états ne déclenchent pas de respawn générique forcé).
+- 2026-06-28 / Jalon 3 : le K.O. prolongé partage la même mécanique que le temporaire pour ce jalon (compte de coups, transition FULLY_DOWNED), mais le suivi de la mort du boss et du de spawn/reset permanent est repoussé au Jalon 4.
 
 ### Outcome et retrospective
 
@@ -40,14 +51,16 @@
 - Jalon 1 : `.\gradlew.bat test --rerun-tasks` et `.\gradlew.bat build --rerun-tasks` réussis; 23 tests, aucun échec.
 - Jalon 2 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 9s`, 47 tests, 0 échec, 0 erreur.
 - Jalon 2 : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
-- Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (59 967 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (28 825 bytes).
-- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking.
-- Risque restant : avertissement générique ForgeGradle sur une future incompatibilité Gradle 9, sans effet sur Gradle 8.8.
-- Vérification non exécutée : `runServer` / `runClient`, car Jalon 2 reste infrastructure réseau/persistance et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay.
+- Jalon 3 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 126 tests, 0 échec, 0 erreur.
+- Jalon 3 : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 7s`.
+- Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (131 568 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (51 950 bytes).
+- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité et qualité à valider dans un second subagent.
+- Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release.
+- Vérification non exécutée : `runServer` / `runClient`, car Jalon 3 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
 
 ### Reprise agent sans état
 
-Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus après commit Jalon 2, lancer l’analyse d’impact des symboles de mort/respawn, puis déléguer le Jalon 3 à un agent gameplay pour interception des morts, K.O. temporaire, restrictions serveur, relève alliée et Ancre d’Âme sans toucher aux drops/XP vanilla.
+Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus après commit Jalon 3, déléguer le Jalon 4 (K.O. prolongé : recherche de boss taggé le plus proche, interdire relève alliée et ancre pendant le prolongé, suivi de la mort du boss, gestion despawn/reset permanent, timeout/changement de dimension/Libérer l’Esprit) à un agent gameplay.
 
 ## 1. Résumé
 

@@ -74,6 +74,93 @@ class ReviveServiceTest {
     }
 
     @Test
+    void expirationTransitionsProlongedKoRecordOnlyOnce() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        long[] clock = {1_999L};
+        UUID due = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data,
+                () -> clock[0],
+                new ReviveSyncService(sink),
+                uuid -> uuid.equals(due) ? OptionalInt.of(55) : OptionalInt.empty());
+        data.put(due, record(ReviveState.PROLONGED_KO, 2_000L));
+        data.setDirty(false);
+
+        assertEquals(0, service.tickExpirations());
+        assertEquals(0, sink.messages.size());
+        assertFalse(data.isDirty());
+
+        clock[0] = 2_000L;
+        assertEquals(1, service.tickExpirations());
+        assertEquals(ReviveState.PENDING_DEATH, data.get(due).orElseThrow().state());
+        assertEquals(2, sink.messages.size());
+
+        clock[0] = 2_001L;
+        assertEquals(0, service.tickExpirations());
+        assertEquals(2, sink.messages.size());
+    }
+
+    @Test
+    void expirationTransitionsTemporaryAndProlongedAndFullyDownedInSingleTick() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        long[] clock = {500L};
+        UUID temporaryPlayer = UUID.randomUUID();
+        UUID prolongedPlayer = UUID.randomUUID();
+        UUID fullyDownedPlayer = UUID.randomUUID();
+        ReviveService service = new ReviveService(
+                () -> data,
+                () -> clock[0],
+                new ReviveSyncService(sink),
+                uuid -> OptionalInt.empty());
+        data.put(temporaryPlayer, record(ReviveState.TEMPORARY_KO, 500L));
+        data.put(prolongedPlayer, record(ReviveState.PROLONGED_KO, 500L));
+        data.put(fullyDownedPlayer, record(ReviveState.FULLY_DOWNED, 500L));
+        data.setDirty(false);
+
+        assertEquals(3, service.tickExpirations());
+
+        assertEquals(ReviveState.PENDING_DEATH, data.get(temporaryPlayer).orElseThrow().state());
+        assertEquals(ReviveState.PENDING_DEATH, data.get(prolongedPlayer).orElseThrow().state());
+        assertEquals(ReviveState.PENDING_DEATH, data.get(fullyDownedPlayer).orElseThrow().state());
+        assertEquals(3, sink.messages.size());
+    }
+
+    @Test
+    void expirationHandledByReviveServiceEliminatesDoubleCountFromProlongedService() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink reviveSink = new RecordingSink();
+        RecordingSink prolongedSink = new RecordingSink();
+        long[] clock = {1_000L};
+        UUID player = UUID.randomUUID();
+        ReviveService revive = new ReviveService(
+                () -> data,
+                () -> clock[0],
+                new ReviveSyncService(reviveSink),
+                uuid -> OptionalInt.empty());
+        ProlongedKoService prolonged = new ProlongedKoService(
+                () -> data,
+                () -> clock[0],
+                uuid -> OptionalInt.empty(),
+                new ReviveSyncService(prolongedSink),
+                new BossLinkRegistry(),
+                (uuid, dimension, position, sickness) -> ProlongedKoService.ResurrectionResult.success(),
+                new ProlongedKoService.Config(6_000));
+        data.put(player, record(ReviveState.PROLONGED_KO, 1_000L));
+        data.setDirty(false);
+
+        int reviveTransitions = revive.tickExpirations();
+        int prolongedTransitions = prolonged.tickExpirations();
+
+        assertEquals(1, reviveTransitions, "revive should consume the due deadline once");
+        assertEquals(0, prolongedTransitions, "prolonged should not observe any remaining due record");
+        assertEquals(ReviveState.PENDING_DEATH, data.get(player).orElseThrow().state());
+        assertEquals(1, reviveSink.messages.size());
+        assertTrue(prolongedSink.messages.isEmpty());
+    }
+
+    @Test
     void transitionVisualUsesActualEntityIdInsteadOfPlaceholder() {
         RecordingSink sink = new RecordingSink();
         ReviveSyncService sync = new ReviveSyncService(sink);

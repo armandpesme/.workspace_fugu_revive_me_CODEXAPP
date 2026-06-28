@@ -73,7 +73,8 @@ public final class ProlongedKoLogic {
 
     public static Optional<KoRecord> transitionOnBossDespawn(KoRecord current) {
         Objects.requireNonNull(current, "current");
-        if (current.state() != ReviveState.PROLONGED_KO) {
+        if (current.state() != ReviveState.PROLONGED_KO
+                && current.state() != ReviveState.FULLY_DOWNED) {
             return Optional.empty();
         }
         return Optional.of(current.transitionTo(ReviveState.PENDING_DEATH));
@@ -101,18 +102,5 @@ public final class ProlongedKoLogic {
             return Optional.empty();
         }
         return Optional.of(current.transitionTo(ReviveState.PENDING_DEATH));
-    }
-
-    public static KoRecord extendOnFullyDowned(KoRecord current) {
-        Objects.requireNonNull(current, "current");
-        if (current.state() != ReviveState.TEMPORARY_KO && current.state() != ReviveState.PROLONGED_KO) {
-            throw new IllegalArgumentException(
-                    "extendOnFullyDowned requires TEMPORARY_KO or PROLONGED_KO, got " + current.state());
-        }
-        long extensionDeadline = current.deadlineGameTime() + KnockoutStateLogic.FULLY_DOWNED_EXTENSION_TICKS;
-        return current
-                .withHitsTaken(current.hitsTaken() + 1)
-                .transitionTo(ReviveState.FULLY_DOWNED)
-                .withDeadline(extensionDeadline);
     }
 }

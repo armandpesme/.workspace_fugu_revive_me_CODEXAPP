@@ -354,11 +354,15 @@ public final class KoEventHandlers {
             return;
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
+        tickServerState(runtime, MinecraftServerGuard.getServer());
+    }
+
+    static void tickServerState(FuguKnockoutRuntime runtime, MinecraftServer server) {
+        Objects.requireNonNull(runtime, "runtime");
         runtime.revive().tickExpirations();
-        runtime.prolonged().tickExpirations();
         runtime.ally().tick(forgeTickInputs(runtime));
         runtime.soulAnchor().tick(forgeSoulAnchorInputs(runtime));
-        sampleSafePositions(runtime);
+        sampleSafePositions(runtime, server);
     }
 
     @SubscribeEvent
@@ -390,6 +394,26 @@ public final class KoEventHandlers {
                 runtime.tracker(),
                 runtime.damage(),
                 player.getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        FuguKnockoutRuntime runtime;
+        try {
+            runtime = FuguKnockoutRuntime.get();
+        } catch (IllegalStateException uninitialised) {
+            return;
+        }
+        tryResurrectOnReconnect(runtime.prolonged(), player.getUUID());
+    }
+
+    static boolean tryResurrectOnReconnect(ProlongedKoService prolonged, UUID playerUuid) {
+        Objects.requireNonNull(prolonged, "prolonged");
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        return prolonged.resurrectOnKoPosition(playerUuid);
     }
 
     @SubscribeEvent
@@ -510,8 +534,7 @@ public final class KoEventHandlers {
         return Optional.ofNullable(ResourceLocation.tryParse(bossTagString));
     }
 
-    private static void sampleSafePositions(FuguKnockoutRuntime runtime) {
-        MinecraftServer server = MinecraftServerGuard.getServer();
+    private static void sampleSafePositions(FuguKnockoutRuntime runtime, MinecraftServer server) {
         if (server == null) {
             return;
         }

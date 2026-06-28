@@ -2,8 +2,13 @@ package com.fuguteams.fugureviveme.server;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -204,5 +209,52 @@ class BossLinkRegistryTest {
     void isLinkedToAnyPlayerRejectsNullArgument() {
         BossLinkRegistry registry = new BossLinkRegistry();
         assertThrows(NullPointerException.class, () -> registry.isLinkedToAnyPlayer(null));
+    }
+
+    @Test
+    void concurrentLinkAndUnlinkDoNotCorruptState() throws InterruptedException {
+        BossLinkRegistry registry = new BossLinkRegistry();
+        UUID boss = UUID.randomUUID();
+        int playerCount = 64;
+        UUID[] players = new UUID[playerCount];
+        for (int i = 0; i < playerCount; i++) {
+            players[i] = UUID.randomUUID();
+        }
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        AtomicInteger errors = new AtomicInteger();
+        for (UUID player : players) {
+            pool.submit(() -> {
+                try {
+                    registry.link(boss, player);
+                } catch (RuntimeException exception) {
+                    errors.incrementAndGet();
+                }
+            });
+            pool.submit(() -> {
+                try {
+                    registry.unlink(boss, player);
+                } catch (RuntimeException exception) {
+                    errors.incrementAndGet();
+                }
+            });
+        }
+        pool.shutdown();
+        boolean done = pool.awaitTermination(15, TimeUnit.SECONDS);
+        assertTrue(done, "concurrent tasks did not finish in time");
+        assertEquals(0, errors.get(), "no concurrent exception expected");
+        Set<UUID> snapshot = registry.playersLinkedTo(boss);
+        assertTrue(snapshot.size() <= playerCount);
+        assertTrue(new HashSet<>(snapshot).containsAll(snapshot));
+    }
+
+    @Test
+    void playersLinkedToReturnsDefensiveCopyAfterConcurrentMutation() {
+        BossLinkRegistry registry = new BossLinkRegistry();
+        UUID boss = UUID.randomUUID();
+        UUID first = UUID.randomUUID();
+        registry.link(boss, first);
+        Set<UUID> snapshot = registry.playersLinkedTo(boss);
+        registry.unlink(boss, first);
+        assertTrue(snapshot.contains(first));
     }
 }

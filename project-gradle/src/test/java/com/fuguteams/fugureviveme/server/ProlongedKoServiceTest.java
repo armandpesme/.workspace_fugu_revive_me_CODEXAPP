@@ -183,6 +183,24 @@ class ProlongedKoServiceTest {
     }
 
     @Test
+    void onBossDespawnTransitionsFullyDownedLinkedPlayerToPendingDeath() {
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        BossLinkRegistry links = new BossLinkRegistry();
+        UUID boss = UUID.randomUUID();
+        UUID player = UUID.randomUUID();
+        data.put(player, record(ReviveState.FULLY_DOWNED, 1_000L, Optional.of(boss)));
+        links.link(boss, player);
+        ProlongedKoService svc = service(data, links, sink, 0L);
+
+        boolean transitioned = svc.onBossDespawn(boss);
+
+        assertTrue(transitioned);
+        assertEquals(ReviveState.PENDING_DEATH, data.get(player).orElseThrow().state());
+        assertFalse(links.isLinkedToAnyPlayer(boss));
+    }
+
+    @Test
     void onBossDespawnIsNoOpWhenNoPlayersLinked() {
         KnockoutSavedData data = new KnockoutSavedData();
         RecordingSink sink = new RecordingSink();

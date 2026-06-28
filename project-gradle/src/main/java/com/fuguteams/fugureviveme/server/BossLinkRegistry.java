@@ -1,11 +1,14 @@
 package com.fuguteams.fugureviveme.server;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * In-memory registry of boss-to-players links used by the Jalon 4
@@ -18,15 +21,24 @@ import java.util.UUID;
  * persisted: a server restart drops every entry and the durable boss
  * link is recovered from the {@code linkedBossUuid} field of each
  * {@code KoRecord} in the {@code KnockoutSavedData}.
+ * <p>
+ * The backing map is a {@link ConcurrentHashMap} and the per-boss player
+ * sets are backed by a concurrent map as well, so the registry is safe
+ * to mutate from any thread even though Forge is normally
+ * single-threaded for tick events. This avoids accidental races if a
+ * future change introduces asynchronous work (async packet flush, etc.).
  */
 public final class BossLinkRegistry {
-    private final Map<UUID, Set<UUID>> playersByBoss = new HashMap<>();
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    private final Map<UUID, Set<UUID>> playersByBoss = new ConcurrentHashMap<>();
 
     public void link(UUID bossUuid, UUID playerUuid) {
         Objects.requireNonNull(bossUuid, "bossUuid");
         Objects.requireNonNull(playerUuid, "playerUuid");
-        playersByBoss.computeIfAbsent(bossUuid, ignored -> new LinkedHashSet<>())
+        playersByBoss.computeIfAbsent(bossUuid, ignored -> concurrentSet())
                 .add(playerUuid);
+        LOGGER.debug("Boss link registered boss={} player={}", bossUuid, playerUuid);
     }
 
     public boolean unlink(UUID bossUuid, UUID playerUuid) {
@@ -38,14 +50,22 @@ public final class BossLinkRegistry {
         }
         boolean removed = players.remove(playerUuid);
         if (players.isEmpty()) {
-            playersByBoss.remove(bossUuid);
+            playersByBoss.remove(bossUuid, players);
+        }
+        if (removed) {
+            LOGGER.debug("Boss link removed boss={} player={}", bossUuid, playerUuid);
         }
         return removed;
     }
 
     public boolean unlinkBoss(UUID bossUuid) {
         Objects.requireNonNull(bossUuid, "bossUuid");
-        return playersByBoss.remove(bossUuid) != null;
+        Set<UUID> removed = playersByBoss.remove(bossUuid);
+        if (removed != null && !removed.isEmpty()) {
+            LOGGER.debug("Boss link cleared boss={} players={}", bossUuid, removed.size());
+            return true;
+        }
+        return false;
     }
 
     public boolean unlinkBossByPlayer(UUID playerUuid) {
@@ -57,6 +77,9 @@ public final class BossLinkRegistry {
             }
         }
         playersByBoss.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+        if (removed) {
+            LOGGER.debug("Boss link cleared by player player={}", playerUuid);
+        }
         return removed;
     }
 
@@ -77,5 +100,9 @@ public final class BossLinkRegistry {
 
     public int trackedBosses() {
         return playersByBoss.size();
+    }
+
+    private static Set<UUID> concurrentSet() {
+        return Collections.newSetFromMap(new ConcurrentHashMap<>());
     }
 }

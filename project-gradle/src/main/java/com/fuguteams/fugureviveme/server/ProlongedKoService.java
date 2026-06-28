@@ -8,6 +8,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +35,8 @@ import java.util.function.Supplier;
  * be unit tested without mocking {@link ServerPlayer}.
  */
 public final class ProlongedKoService {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private final Supplier<KnockoutSavedData> data;
     private final LongSupplier overworldClock;
     private final Function<UUID, OptionalInt> entityIdLookup;
@@ -76,6 +80,8 @@ public final class ProlongedKoService {
             unlinkIfAny(current.get(), playerUuid);
             publishTransition(playerUuid, next.get(), now);
             transitions++;
+            LOGGER.debug("Prolonged KO timeout fired player={} now={} nextState={}",
+                    playerUuid, now, next.get().state());
         }
         return transitions;
     }
@@ -97,6 +103,7 @@ public final class ProlongedKoService {
         data.get().put(playerUuid, next.get());
         unlinkIfAny(current.get(), playerUuid);
         publishTransition(playerUuid, next.get(), overworldClock.getAsLong());
+        LOGGER.info("Prolonged KO aborted by dimension change player={} to={}", playerUuid, currentDimension);
         return true;
     }
 
@@ -121,6 +128,8 @@ public final class ProlongedKoService {
             bossLinks.unlink(bossUuid, playerUuid);
             publishTransition(playerUuid, next.get(), now);
             anyTransitioned = true;
+            LOGGER.info("Prolonged KO boss died boss={} player={} nextState={}",
+                    bossUuid, playerUuid, next.get().state());
         }
         return anyTransitioned;
     }
@@ -146,6 +155,8 @@ public final class ProlongedKoService {
             bossLinks.unlink(bossUuid, playerUuid);
             publishTransition(playerUuid, next.get(), now);
             anyTransitioned = true;
+            LOGGER.info("Prolonged KO boss despawned boss={} player={} nextState={}",
+                    bossUuid, playerUuid, next.get().state());
         }
         return anyTransitioned;
     }
@@ -181,11 +192,14 @@ public final class ProlongedKoService {
         ResurrectionResult result = resurrection.apply(playerUuid, koRecord.koDimension(),
                 koRecord.koPosition(), config.resurrectionSicknessDurationTicks());
         if (!result.applied()) {
+            LOGGER.info("Prolonged KO resurrection skipped for player={} (player offline)", playerUuid);
             return false;
         }
         savedData.transitionToAlive(playerUuid);
         unlinkIfAny(koRecord, playerUuid);
         sync.sendSelf(playerUuid, savedData.get(playerUuid), overworldClock.getAsLong());
+        LOGGER.info("Prolonged KO resurrection applied player={} dimension={} pos={}",
+                playerUuid, koRecord.koDimension(), koRecord.koPosition());
         return true;
     }
 

@@ -121,13 +121,26 @@ class ProlongedKoLogicTest {
     }
 
     @Test
-    void transitionOnBossDespawnIgnoresNonProlongedStates() {
+    void transitionOnBossDespawnMovesFullyDownedToPendingDeath() {
+        UUID boss = UUID.randomUUID();
+        KoRecord current = record(ReviveState.FULLY_DOWNED, 1_000L, Optional.of(boss));
+
+        Optional<KoRecord> next = ProlongedKoLogic.transitionOnBossDespawn(current);
+
+        assertTrue(next.isPresent());
+        assertEquals(ReviveState.PENDING_DEATH, next.get().state());
+        assertEquals(1_000L, next.get().deadlineGameTime());
+        assertEquals(Optional.of(boss), next.get().linkedBossUuid());
+    }
+
+    @Test
+    void transitionOnBossDespawnIgnoresNonEligibleStates() {
         KoRecord temporary = record(ReviveState.TEMPORARY_KO, 1_000L, Optional.empty());
-        KoRecord fullyDowned = record(ReviveState.FULLY_DOWNED, 1_000L, Optional.empty());
         KoRecord pending = record(ReviveState.PENDING_DEATH, 1_000L, Optional.empty());
+        KoRecord pendingRevive = record(ReviveState.PENDING_REVIVE, 1_000L, Optional.empty());
         assertFalse(ProlongedKoLogic.transitionOnBossDespawn(temporary).isPresent());
-        assertFalse(ProlongedKoLogic.transitionOnBossDespawn(fullyDowned).isPresent());
         assertFalse(ProlongedKoLogic.transitionOnBossDespawn(pending).isPresent());
+        assertFalse(ProlongedKoLogic.transitionOnBossDespawn(pendingRevive).isPresent());
     }
 
     @Test
@@ -187,20 +200,5 @@ class ProlongedKoLogicTest {
         KoRecord current = record(ReviveState.TEMPORARY_KO, 1_000L, Optional.empty());
         assertThrows(IllegalArgumentException.class,
                 () -> ProlongedKoLogic.transitionOnTimeout(current, -1L));
-    }
-
-    @Test
-    void extendOnFullyDownedTransitionsToFullyDownedAndExtendsDeadline() {
-        KoRecord current = record(ReviveState.PROLONGED_KO, 1_000L, Optional.empty());
-        KoRecord next = ProlongedKoLogic.extendOnFullyDowned(current);
-        assertEquals(ReviveState.FULLY_DOWNED, next.state());
-        assertEquals(1, next.hitsTaken());
-        assertEquals(1_000L + KnockoutStateLogic.FULLY_DOWNED_EXTENSION_TICKS, next.deadlineGameTime());
-    }
-
-    @Test
-    void extendOnFullyDownedRejectsNonKoStates() {
-        KoRecord alive = record(ReviveState.PENDING_REVIVE, 1_000L, Optional.empty());
-        assertThrows(IllegalArgumentException.class, () -> ProlongedKoLogic.extendOnFullyDowned(alive));
     }
 }

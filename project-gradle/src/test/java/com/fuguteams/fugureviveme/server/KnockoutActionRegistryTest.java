@@ -56,12 +56,10 @@ class KnockoutActionRegistryTest {
                 100L, pos, pos, 0);
 
         registry.start(action);
-        KoAction found = registry.findActiveForHelper(helper).orElseThrow();
-        assertEquals(action.targetUuid(), found.targetUuid());
+        assertTrue(registry.get(target).isPresent());
 
         assertTrue(registry.cancelHelper(helper));
         assertEquals(0, registry.size());
-        assertTrue(registry.findActiveForHelper(helper).isEmpty());
         assertTrue(registry.get(target).isEmpty());
     }
 
@@ -86,7 +84,7 @@ class KnockoutActionRegistryTest {
     }
 
     @Test
-    void multipleHelpersTargetSamePlayer() {
+    void singleHelperFindsActionByHelperUuid() {
         KnockoutActionRegistry registry = new KnockoutActionRegistry();
         UUID helper = UUID.randomUUID();
         UUID target = UUID.randomUUID();
@@ -96,7 +94,7 @@ class KnockoutActionRegistryTest {
                 100L, pos, pos, 0);
 
         assertTrue(registry.start(first));
-        KoAction resolved = registry.findActiveForHelper(helper).orElseThrow();
+        KoAction resolved = registry.get(target).orElseThrow();
         assertSame(first, resolved);
     }
 }

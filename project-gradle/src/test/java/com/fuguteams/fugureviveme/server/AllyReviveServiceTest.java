@@ -3,6 +3,7 @@ package com.fuguteams.fugureviveme.server;
 import com.fuguteams.fugureviveme.network.ClientboundReviveSnapshot;
 import com.fuguteams.fugureviveme.network.ClientboundTrackedKoVisual;
 import com.fuguteams.fugureviveme.state.KnockoutSavedData;
+import com.fuguteams.fugureviveme.state.KoAction;
 import com.fuguteams.fugureviveme.state.KoRecord;
 import com.fuguteams.fugureviveme.state.ReviveActionType;
 import com.fuguteams.fugureviveme.state.ReviveState;
@@ -86,7 +87,7 @@ class AllyReviveServiceTest {
         data.put(target, new KoRecord(
                 ReviveState.TEMPORARY_KO, 100L, 0,
                 ResourceLocation.parse("minecraft:overworld"), new BlockPos(0, 64, 0), Optional.empty()));
-        registry.start(new com.fuguteams.fugureviveme.state.KoAction(
+        registry.start(new KoAction(
                 target, Optional.of(helper), ReviveActionType.ALLY_REVIVE,
                 100L, new BlockPos(0, 64, 0), new BlockPos(0, 64, 0), 0));
 
@@ -121,7 +122,7 @@ class AllyReviveServiceTest {
         data.put(target, new KoRecord(
                 ReviveState.TEMPORARY_KO, 100L, 0,
                 ResourceLocation.parse("minecraft:overworld"), new BlockPos(0, 64, 0), Optional.empty()));
-        registry.start(new com.fuguteams.fugureviveme.state.KoAction(
+        registry.start(new KoAction(
                 target, Optional.of(helper), ReviveActionType.ALLY_REVIVE,
                 100L, new BlockPos(0, 64, 0), new BlockPos(0, 64, 0), 0));
 

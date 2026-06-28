@@ -34,4 +34,18 @@ class KnockoutDamageTrackerTest {
         assertTrue(tracker.consume(player) == false);
         assertFalse(tracker.isFlagged(player));
     }
+
+    @Test
+    void clearForPlayerOnlyRemovesThatEntry() {
+        KnockoutDamageTracker tracker = new KnockoutDamageTracker();
+        UUID player = UUID.randomUUID();
+        UUID other = UUID.randomUUID();
+        tracker.flag(player, 100L);
+        tracker.flag(other, 200L);
+
+        tracker.clear(player);
+
+        assertFalse(tracker.isFlagged(player));
+        assertTrue(tracker.isFlagged(other));
+    }
 }

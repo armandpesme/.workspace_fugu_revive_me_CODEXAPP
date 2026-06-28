@@ -37,21 +37,6 @@ public final class KnockoutActionRegistry {
         return Optional.ofNullable(actionsByTarget.get(targetUuid));
     }
 
-    public Optional<KoAction> findActiveForHelper(UUID helperUuid) {
-        Objects.requireNonNull(helperUuid, "helperUuid");
-        Set<UUID> targets = helpersByHelper.get(helperUuid);
-        if (targets == null || targets.isEmpty()) {
-            return Optional.empty();
-        }
-        for (UUID target : targets) {
-            KoAction action = actionsByTarget.get(target);
-            if (action != null && action.involvesHelper(helperUuid)) {
-                return Optional.of(action);
-            }
-        }
-        return Optional.empty();
-    }
-
     public Collection<KoAction> all() {
         return Collections.unmodifiableCollection(actionsByTarget.values());
     }

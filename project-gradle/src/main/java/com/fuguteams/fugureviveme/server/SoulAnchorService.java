@@ -75,7 +75,7 @@ public final class SoulAnchorService {
                     registry.cancelTarget(action.targetUuid());
                 }
                 case CONTINUE -> {
-                    // nothing
+                    break;
                 }
             }
         }

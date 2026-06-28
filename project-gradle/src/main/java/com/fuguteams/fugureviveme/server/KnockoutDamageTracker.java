@@ -1,13 +1,8 @@
 package com.fuguteams.fugureviveme.server;
 
-import com.fuguteams.fugureviveme.state.KoAction;
-import com.fuguteams.fugureviveme.state.ReviveActionType;
-import net.minecraft.resources.ResourceLocation;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -32,6 +27,11 @@ public final class KnockoutDamageTracker {
     public boolean isFlagged(UUID playerUuid) {
         Objects.requireNonNull(playerUuid, "playerUuid");
         return damageByPlayer.containsKey(playerUuid);
+    }
+
+    public void clear(UUID playerUuid) {
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        damageByPlayer.remove(playerUuid);
     }
 
     public void clear() {

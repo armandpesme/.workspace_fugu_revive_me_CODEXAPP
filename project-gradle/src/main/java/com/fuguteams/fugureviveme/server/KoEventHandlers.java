@@ -1,10 +1,7 @@
 package com.fuguteams.fugureviveme.server;
 
-import com.fuguteams.fugureviveme.config.ServerConfig;
-import com.fuguteams.fugureviveme.network.FuguNetwork;
 import com.fuguteams.fugureviveme.registry.ModEffects;
 import com.fuguteams.fugureviveme.state.BiomeKoClassifier;
-import com.fuguteams.fugureviveme.state.KnockoutSavedData;
 import com.fuguteams.fugureviveme.state.KoRecord;
 import com.fuguteams.fugureviveme.state.ReviveState;
 import net.minecraft.ChatFormatting;
@@ -15,20 +12,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.Tags;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
@@ -37,16 +28,16 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.UUID;
 
 /**
@@ -66,8 +57,6 @@ import java.util.UUID;
         value = net.minecraftforge.api.distmarker.Dist.DEDICATED_SERVER)
 public final class KoEventHandlers {
 
-    private static final double BOSS_SEARCH_RADIUS_FALLBACK = 20.0;
-    private static final String BOSS_TAG_FALLBACK = "fugu_revive_me:fugu_boss";
     private static final int HOTBAR_SIZE = 9;
 
     private KoEventHandlers() {
@@ -79,9 +68,7 @@ public final class KoEventHandlers {
         forgeBus.register(KoEventHandlers.class);
     }
 
-    // ---------------------------------------------------------------------
     // Death interception
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
@@ -100,10 +87,12 @@ public final class KoEventHandlers {
             return;
         }
         boolean hasSickness = player.hasEffect(ModEffects.RESURRECTION_SICKNESS.get());
-        Optional<UUID> nearbyBoss = koType == BiomeKoClassifier.KoType.PROLONGED
-                ? findNearestBoss(level, player.blockPosition())
-                : Optional.empty();
         FuguKnockoutRuntime service = FuguKnockoutRuntime.get();
+        Optional<UUID> nearbyBoss = koType == BiomeKoClassifier.KoType.PROLONGED
+                ? findNearestBoss(level, player.blockPosition(),
+                        service.config().prolongedBossTag(),
+                        service.config().prolongedBossSearchRadius())
+                : Optional.empty();
         int durationTicks = service.config().temporaryDurationTicks();
         int maxHits = service.config().temporaryMaxHits();
         Optional<KoRecord> created = service.revive().tryEnterKnockoutOnDeath(
@@ -124,9 +113,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Hit handling
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
@@ -162,9 +149,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Ally revive
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
@@ -196,9 +181,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Soul anchor
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onUseItemStart(LivingEntityUseItemEvent.Start event) {
@@ -223,17 +206,9 @@ public final class KoEventHandlers {
             return;
         }
         KnockoutPlayerSnapshot snap = snapshotOf(player);
-        SoulAnchorLogic.StartOutcome outcome = runtime.soulAnchor().tryStart(snap, slot);
-        if (outcome instanceof SoulAnchorLogic.StartAllowed) {
-            event.setCanceled(true);
-        } else {
-            event.setCanceled(true);
-        }
+        runtime.soulAnchor().tryStart(snap, slot);
+        event.setCanceled(true);
     }
-
-    // ---------------------------------------------------------------------
-    // Restrictions during temporary KO
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
@@ -284,9 +259,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Respawn transfer
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -305,9 +278,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Damage tracker (used by ally revive cancellation)
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onPlayerHurt(LivingHurtEvent event) {
@@ -317,9 +288,7 @@ public final class KoEventHandlers {
         }
     }
 
-    // ---------------------------------------------------------------------
     // Server tick
-    // ---------------------------------------------------------------------
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -345,6 +314,30 @@ public final class KoEventHandlers {
     }
 
     @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        FuguKnockoutRuntime runtime;
+        try {
+            runtime = FuguKnockoutRuntime.get();
+        } catch (IllegalStateException uninitialised) {
+            return;
+        }
+        clearTransientPlayerState(
+                runtime.actionRegistry(),
+                runtime.movementOverride(),
+                runtime.tracker(),
+                runtime.damage(),
+                player.getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        FuguKnockoutRuntime.reset();
+    }
+
+    @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;
@@ -362,22 +355,20 @@ public final class KoEventHandlers {
             return;
         }
         if (runtime.restrictions().isRestricted(state)) {
-            // Cap the player's base movement speed to the slow KO value.
             double current = speedAttr.getBaseValue();
             if (current > KnockoutRestrictionService.KO_WALK_SPEED) {
                 runtime.movementOverride().remember(player.getUUID(), current);
                 speedAttr.setBaseValue(KnockoutRestrictionService.KO_WALK_SPEED);
             }
         } else {
-            if (runtime.movementOverride().forget(player.getUUID())) {
-                speedAttr.setBaseValue(runtime.movementOverride().vanillaDefault());
+            OptionalDouble stored = runtime.movementOverride().forget(player.getUUID());
+            if (stored.isPresent()) {
+                speedAttr.setBaseValue(stored.getAsDouble());
             }
         }
     }
 
-    // ---------------------------------------------------------------------
     // Helpers
-    // ---------------------------------------------------------------------
 
     private static KnockoutPlayerSnapshot snapshotOf(ServerPlayer player) {
         ItemStack held = player.getMainHandItem();
@@ -418,18 +409,25 @@ public final class KoEventHandlers {
         return id == null ? "" : id.toString();
     }
 
-    private static Optional<UUID> findNearestBoss(ServerLevel level, BlockPos position) {
-        ResourceLocation tagId = ResourceLocation.tryParse(BOSS_TAG_FALLBACK);
-        if (tagId == null) {
+    private static Optional<UUID> findNearestBoss(ServerLevel level, BlockPos position, String bossTagString, double radius) {
+        TagKey<EntityType<?>> bossTag = parseBossTag(bossTagString)
+                .map(id -> TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE, id))
+                .orElse(null);
+        if (bossTag == null) {
             return Optional.empty();
         }
-        TagKey<EntityType<?>> bossTag = TagKey.create(
-                net.minecraft.core.registries.Registries.ENTITY_TYPE, tagId);
-        AABB search = new AABB(position).inflate(BOSS_SEARCH_RADIUS_FALLBACK);
+        AABB search = new AABB(position).inflate(radius);
         List<Entity> entities = level.getEntitiesOfClass(Entity.class, search, e -> e.getType().is(bossTag));
         return entities.stream()
                 .min(Comparator.comparingDouble(e -> e.distanceToSqr(position.getX(), position.getY(), position.getZ())))
                 .map(Entity::getUUID);
+    }
+
+    static Optional<ResourceLocation> parseBossTag(String bossTagString) {
+        if (bossTagString == null || bossTagString.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(ResourceLocation.tryParse(bossTagString));
     }
 
     private static void sampleSafePositions(FuguKnockoutRuntime runtime) {
@@ -540,5 +538,23 @@ public final class KoEventHandlers {
             return null;
         }
         return server.getPlayerList().getPlayer(playerUuid);
+    }
+
+    static void clearTransientPlayerState(
+            KnockoutActionRegistry actionRegistry,
+            MovementOverrideRegistry movementOverride,
+            LastSafePositionTracker tracker,
+            KnockoutDamageTracker damage,
+            UUID playerUuid) {
+        Objects.requireNonNull(actionRegistry, "actionRegistry");
+        Objects.requireNonNull(movementOverride, "movementOverride");
+        Objects.requireNonNull(tracker, "tracker");
+        Objects.requireNonNull(damage, "damage");
+        Objects.requireNonNull(playerUuid, "playerUuid");
+        actionRegistry.cancelTarget(playerUuid);
+        actionRegistry.cancelHelper(playerUuid);
+        movementOverride.forget(playerUuid);
+        tracker.forget(playerUuid);
+        damage.clear(playerUuid);
     }
 }

@@ -137,6 +137,7 @@ public final class FuguKnockoutRuntime {
             int prolongedDurationTicks,
             int prolongedMaxHits,
             double prolongedBossSearchRadius,
+            String prolongedBossTag,
             int resurrectionSicknessDurationTicks
     ) {
         public AllyReviveService.AllyReviveConfig allyReviveConfig() {
@@ -164,6 +165,7 @@ public final class FuguKnockoutRuntime {
                     ServerConfig.PROLONGED_KO_DURATION_TICKS.get(),
                     ServerConfig.PROLONGED_KO_MAX_HITS.get(),
                     ServerConfig.PROLONGED_KO_BOSS_SEARCH_RADIUS.get(),
+                    ServerConfig.PROLONGED_KO_BOSS_TAG.get(),
                     ServerConfig.RESURRECTION_SICKNESS_DURATION_TICKS.get());
         }
     }

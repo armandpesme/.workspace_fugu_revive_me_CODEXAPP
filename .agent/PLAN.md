@@ -12,7 +12,7 @@
 - Fait : index GitNexus dédié au worktree créé sous `.workspace_fugu_revive_me_CODEXAPP-v1`.
 - Fait : Jalon 1 — fondation Forge et configuration, double revue validée.
 - Fait : Jalon 2 — persistance SavedData clairsemée, réseau Forge, snapshots client et tests, double revue validée puis corrections qualité appliquées.
-- Fait : Jalon 3 — interception de la mort, K.O. temporaire, restrictions serveur, relève alliée, Ancre d’Âme et respawn générique, double revue à planifier.
+- Fait : Jalon 3 — interception de la mort, K.O. temporaire, restrictions serveur, relève alliée, Ancre d’Âme et respawn générique, double revue conformité/qualité, puis correctifs qualité appliqués.
 - En cours : préparation Jalon 4 — K.O. prolongé, recherche de boss taggé, respawn position K.O.
 - Reste : Jalons 4 à 7, revues, QA runtime et release `1.0.1`.
 
@@ -28,6 +28,8 @@
 - 2026-06-28 / Jalon 3 : `ServerTickEvent.phase` est un champ, pas une méthode (`event.phase != TickEvent.Phase.END`).
 - 2026-06-28 / Jalon 3 : `EntityType` doit être importé de `net.minecraft.world.entity.EntityType` (et non de `Entity`); le tag est résolu via `TagKey.create(Registries.ENTITY_TYPE, id)`.
 - 2026-06-28 / Jalon 3 : `ServerPlayer#teleportTo(ServerLevel, double, double, double, float, float)` retourne `void`, pas `boolean`.
+- 2026-06-28 / Correctifs qualité Jalon 3 : les tests JUnit purs ne peuvent pas initialiser `Registries.ENTITY_TYPE` (Bootstrap Forge non appelé) ; la valeur exposée par `parseBossTag` est donc un `ResourceLocation` et non un `TagKey`, et la conversion est faite au point d’utilisation dans `findNearestBoss`.
+- 2026-06-28 / Correctifs qualité Jalon 3 : en Java 17, `case X -> {}` (corps vide sur une nouvelle ligne) ne compile pas ; le `case CONTINUE` est conservé en `case CONTINUE -> { break; }` pour garantir la portabilité du `switch` rule.
 
 ### Decision log
 
@@ -44,6 +46,11 @@
 - 2026-06-28 / Jalon 3 : le `FuguKnockoutRuntime` est construit lors de `ServerStartedEvent` (bus FORGE) et expose les singletons aux handlers; il est reset entre deux sessions de jeu.
 - 2026-06-28 / Jalon 3 : le `KnockoutRespawnService.shouldTransfer` n’accepte que PENDING_DEATH, PENDING_REVIVE et DEAD_PENDING_TRANSFER (les autres états ne déclenchent pas de respawn générique forcé).
 - 2026-06-28 / Jalon 3 : le K.O. prolongé partage la même mécanique que le temporaire pour ce jalon (compte de coups, transition FULLY_DOWNED), mais le suivi de la mort du boss et du de spawn/reset permanent est repoussé au Jalon 4.
+- 2026-06-28 / Correctifs qualité Jalon 3 : la signature `MovementOverrideRegistry.forget(UUID)` retourne désormais un `OptionalDouble` (valeur stockée si présente, vide sinon) ; le handler de mouvement utilise la valeur retournée pour restaurer la valeur d’origine, ce qui corrige la régression de vitesse pour les joueurs avec modificateurs (Soul Speed, armure, effets).
+- 2026-06-28 / Correctifs qualité Jalon 3 : `FuguKnockoutRuntime.RuntimeConfig` inclut désormais `prolongedBossTag` (lu depuis `ServerConfig.PROLONGED_KO_BOSS_TAG`); `findNearestBoss` consomme le tag et le rayon depuis le `RuntimeConfig` au lieu de constantes hardcodées.
+- 2026-06-28 / Correctifs qualité Jalon 3 : un handler `PlayerLoggedOutEvent` est ajouté dans `KoEventHandlers` pour vider toutes les entrées transitoires (`KnockoutActionRegistry`, `MovementOverrideRegistry`, `LastSafePositionTracker`, `KnockoutDamageTracker`) afin d’éviter les fuites mémoire à la déconnexion. Le nettoyage est implémenté par `clearTransientPlayerState` qui prend les registres individuellement, pour rester testable sans `MinecraftServer`.
+- 2026-06-28 / Correctifs qualité Jalon 3 : un handler `ServerStoppedEvent` est ajouté pour appeler `FuguKnockoutRuntime.reset()`, ce qui garantit qu’un ancien runtime n’est pas retenu après l’arrêt de singleplayer.
+- 2026-06-28 / Correctifs qualité Jalon 3 : suppression du code mort `KoPlayerProbe`, de `KnockoutActionRegistry.findActiveForHelper` (jamais appelé en production) et des imports inutilisés dans `KoEventHandlers`, `KnockoutDamageTracker`, `AllyReviveLogic`, `SoulAnchorLogic`, `KnockoutRestrictionService`, `AllyReviveService`.
 
 ### Outcome et retrospective
 
@@ -51,10 +58,13 @@
 - Jalon 1 : `.\gradlew.bat test --rerun-tasks` et `.\gradlew.bat build --rerun-tasks` réussis; 23 tests, aucun échec.
 - Jalon 2 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 9s`, 47 tests, 0 échec, 0 erreur.
 - Jalon 2 : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
-- Jalon 3 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 126 tests, 0 échec, 0 erreur.
+- Jalon 3 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 121 tests, 0 échec, 0 erreur.
 - Jalon 3 : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 7s`.
 - Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (131 568 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (51 950 bytes).
-- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité et qualité à valider dans un second subagent.
+- Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 133 tests, 0 échec, 0 erreur. +12 tests (4 pour `parseBossTag`, 2 pour `RuntimeConfig`, 3 pour `clearTransientPlayerState`, 3 nouveaux pour `MovementOverrideRegistry.forget` dont le retour `OptionalDouble` et 1 pour `KnockoutDamageTracker.clear(UUID)`), -1 test renommé (`multipleHelpersTargetSamePlayer` → `singleHelperFindsActionByHelperUuid`).
+- Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
+- Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (131 765 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (51 165 bytes).
+- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité validée; qualité validée après corrections sur la restauration de vitesse, la lecture de la config boss, la fuite mémoire à la déconnexion et le reset du runtime à l’arrêt.
 - Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release.
 - Vérification non exécutée : `runServer` / `runClient`, car Jalon 3 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
 

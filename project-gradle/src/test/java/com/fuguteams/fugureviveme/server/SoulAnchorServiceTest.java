@@ -3,6 +3,7 @@ package com.fuguteams.fugureviveme.server;
 import com.fuguteams.fugureviveme.network.ClientboundReviveSnapshot;
 import com.fuguteams.fugureviveme.network.ClientboundTrackedKoVisual;
 import com.fuguteams.fugureviveme.state.KnockoutSavedData;
+import com.fuguteams.fugureviveme.state.KoAction;
 import com.fuguteams.fugureviveme.state.KoRecord;
 import com.fuguteams.fugureviveme.state.ReviveActionType;
 import com.fuguteams.fugureviveme.state.ReviveState;
@@ -81,7 +82,7 @@ class SoulAnchorServiceTest {
         data.put(target, new KoRecord(
                 ReviveState.TEMPORARY_KO, 100L, 0,
                 ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
-        registry.start(new com.fuguteams.fugureviveme.state.KoAction(
+        registry.start(new KoAction(
                 target, Optional.empty(), ReviveActionType.SELF_REVIVE,
                 100L, BlockPos.ZERO, BlockPos.ZERO, 0));
 
@@ -117,7 +118,7 @@ class SoulAnchorServiceTest {
         data.put(target, new KoRecord(
                 ReviveState.TEMPORARY_KO, 100L, 0,
                 ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
-        registry.start(new com.fuguteams.fugureviveme.state.KoAction(
+        registry.start(new KoAction(
                 target, Optional.empty(), ReviveActionType.SELF_REVIVE,
                 100L, BlockPos.ZERO, BlockPos.ZERO, 0));
 

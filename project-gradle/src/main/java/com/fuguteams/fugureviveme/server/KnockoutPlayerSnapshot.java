@@ -9,9 +9,8 @@ import java.util.UUID;
 
 /**
  * Snapshot of the player metadata that the revive services need in order
- * to make a decision. Built by the orchestrating layer from
- * {@link KoPlayerProbe} so the services themselves remain pure and easy
- * to test.
+ * to make a decision. Built by the orchestrating layer so the services
+ * themselves remain pure and easy to test.
  */
 public record KnockoutPlayerSnapshot(
         UUID playerUuid,

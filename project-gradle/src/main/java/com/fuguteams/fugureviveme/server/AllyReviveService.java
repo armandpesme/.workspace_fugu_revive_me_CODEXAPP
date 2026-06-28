@@ -1,7 +1,5 @@
 package com.fuguteams.fugureviveme.server;
 
-import com.fuguteams.fugureviveme.state.ReviveState;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -84,7 +82,7 @@ public final class AllyReviveService {
                     registry.cancelTarget(action.targetUuid());
                 }
                 case CONTINUE -> {
-                    // nothing
+                    break;
                 }
             }
         }

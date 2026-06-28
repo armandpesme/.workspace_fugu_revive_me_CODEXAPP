@@ -2,6 +2,7 @@ package com.fuguteams.fugureviveme.server;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.OptionalDouble;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MovementOverrideRegistryTest {
 
     @Test
-    void rememberKeepsFirstValueAndForgetReturnsTrueOnce() {
+    void rememberKeepsFirstValueAndForgetRemovesTheEntry() {
         MovementOverrideRegistry registry = new MovementOverrideRegistry();
         UUID player = UUID.randomUUID();
 
@@ -19,15 +20,39 @@ class MovementOverrideRegistryTest {
         registry.remember(player, 0.99);
 
         assertTrue(registry.isRemembered(player));
-        assertEquals(0.10, registry.vanillaDefault(), 0.001);
-        assertTrue(registry.forget(player));
-        assertFalse(registry.forget(player));
+        assertEquals(0.10, registry.forget(player).orElseThrow(), 0.001);
+        assertFalse(registry.forget(player).isPresent());
         assertFalse(registry.isRemembered(player));
     }
 
     @Test
-    void vanillaDefaultMatchesMinecraftPlayerBaseline() {
+    void forgetReturnsEmptyWhenNothingIsStored() {
         MovementOverrideRegistry registry = new MovementOverrideRegistry();
-        assertEquals(0.1, registry.vanillaDefault(), 0.0001);
+        OptionalDouble result = registry.forget(UUID.randomUUID());
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void forgetReturnsCustomSpeedInsteadOfVanillaDefault() {
+        MovementOverrideRegistry registry = new MovementOverrideRegistry();
+        UUID player = UUID.randomUUID();
+        double soulSpeedBoosted = 0.1157;
+
+        registry.remember(player, soulSpeedBoosted);
+
+        OptionalDouble restored = registry.forget(player);
+        assertTrue(restored.isPresent());
+        assertEquals(soulSpeedBoosted, restored.getAsDouble(), 0.0001);
+    }
+
+    @Test
+    void forgetReturnsExactStoredDoubleWithoutClamping() {
+        MovementOverrideRegistry registry = new MovementOverrideRegistry();
+        UUID player = UUID.randomUUID();
+        double customSpeed = 0.42;
+
+        registry.remember(player, customSpeed);
+
+        assertEquals(customSpeed, registry.forget(player).orElseThrow(), 0.0001);
     }
 }

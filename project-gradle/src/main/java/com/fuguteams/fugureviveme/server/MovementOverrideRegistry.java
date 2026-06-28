@@ -3,6 +3,7 @@ package com.fuguteams.fugureviveme.server;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.UUID;
 
 /**
@@ -12,13 +13,7 @@ import java.util.UUID;
  * their vanilla default speed.
  */
 public final class MovementOverrideRegistry {
-    private static final double VANILLA_DEFAULT = 0.1;
-
     private final Map<UUID, Double> storedSpeeds = new HashMap<>();
-
-    public double vanillaDefault() {
-        return VANILLA_DEFAULT;
-    }
 
     public void remember(UUID playerUuid, double currentBaseValue) {
         Objects.requireNonNull(playerUuid, "playerUuid");
@@ -26,13 +21,19 @@ public final class MovementOverrideRegistry {
     }
 
     /**
-     * @return true if a stored speed was present and got removed; the
-     *         caller is expected to restore the attribute to
-     *         {@link #vanillaDefault()}.
+     * Removes the stored speed for {@code playerUuid} and returns it.
+     * <p>
+     * Returns {@link OptionalDouble#empty()} when no entry was stored, in
+     * which case the caller should not modify the player's movement
+     * attribute (the registry was empty, so the attribute was not
+     * overridden).
+     *
+     * @return the previously stored base movement speed, if any.
      */
-    public boolean forget(UUID playerUuid) {
+    public OptionalDouble forget(UUID playerUuid) {
         Objects.requireNonNull(playerUuid, "playerUuid");
-        return storedSpeeds.remove(playerUuid) != null;
+        Double value = storedSpeeds.remove(playerUuid);
+        return value == null ? OptionalDouble.empty() : OptionalDouble.of(value);
     }
 
     public boolean isRemembered(UUID playerUuid) {

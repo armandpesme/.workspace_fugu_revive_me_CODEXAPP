@@ -6,7 +6,6 @@ import com.fuguteams.fugureviveme.state.ReviveState;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Pure functions describing the soul-anchor self-revive. The target is also

@@ -2,6 +2,36 @@
 
 > **Agents d’exécution :** utiliser `superpowers:subagent-driven-development`, avec un subagent neuf par jalon, revue de conformité puis revue qualité avant de continuer.
 
+## État d’exécution — 2026-06-28
+
+### Progression
+
+- Fait : baseline humaine commitée sur `master` (`78ed7a5`).
+- Fait : worktree créé sur `codex/fugu-revive-me-v1`.
+- Fait : test Gradle initial réussi (`test NO-SOURCE`).
+- Fait : index GitNexus dédié au worktree créé sous `.workspace_fugu_revive_me_CODEXAPP-v1`.
+- En cours : Jalon 1 — fondation Forge et configuration.
+- Reste : Jalons 2 à 7, revues, QA runtime et release `1.0.1`.
+
+### Surprises et discovery
+
+- Le MDK de baseline ne contient finalement aucun fichier Java, uniquement Gradle et les ressources Forge minimales.
+- L’index GitNexus doit être relancé après chaque jalon majeur pour connaître les nouveaux symboles.
+
+### Decision log
+
+- 2026-06-28 / Baseline : conserver l’ensemble du snapshot humain validé, puis isoler l’implémentation dans un worktree.
+- 2026-06-28 / GitNexus : utiliser `--index-only` pour ne pas modifier automatiquement les documents protégés.
+
+### Outcome et retrospective
+
+- `.\gradlew.bat test` exécuté depuis le worktree `project-gradle/` : `BUILD SUCCESSFUL in 11s`, aucune source de test ou Java présente.
+- Aucun code métier n’a encore été ajouté.
+
+### Reprise agent sans état
+
+Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : déléguer le Jalon 1 à un agent architecte, avec TDD, identité `fugu_revive_me`, package `com.fuguteams.fugureviveme`, configuration serveur et assets de registre minimaux.
+
 ## 1. Résumé
 
 **Objectif :** livrer `fugu_revive_me` 1.0.1 sous Minecraft 1.20.1, Forge 47.4.20 et Java 17.

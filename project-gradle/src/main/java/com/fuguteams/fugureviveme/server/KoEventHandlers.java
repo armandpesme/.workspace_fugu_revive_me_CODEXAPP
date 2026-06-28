@@ -7,6 +7,7 @@ import com.fuguteams.fugureviveme.state.ReviveState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -78,6 +79,8 @@ public final class KoEventHandlers {
             handleNonPlayerDeath(event);
             return;
         }
+        FuguKnockoutRuntime service = FuguKnockoutRuntime.get();
+        service.returnPendant().cancelCast(player.getUUID());
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
@@ -89,7 +92,6 @@ public final class KoEventHandlers {
             return;
         }
         boolean hasSickness = player.hasEffect(ModEffects.RESURRECTION_SICKNESS.get());
-        FuguKnockoutRuntime service = FuguKnockoutRuntime.get();
         Optional<UUID> nearbyBoss = koType == BiomeKoClassifier.KoType.PROLONGED
                 ? findNearestBoss(level, player.blockPosition(),
                         service.config().prolongedBossTag(),
@@ -178,6 +180,7 @@ public final class KoEventHandlers {
             return;
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
+        runtime.returnPendant().cancelCast(player.getUUID());
         ReviveService service = runtime.revive();
         ReviveState state = service.snapshotState(player.getUUID());
         if (state == ReviveState.FULLY_DOWNED) {
@@ -275,7 +278,27 @@ public final class KoEventHandlers {
             return;
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
+        if (runtime.returnPendant().isCasting(player.getUUID())) {
+            runtime.returnPendant().cancelCast(player.getUUID());
+            event.setCanceled(true);
+            return;
+        }
         if (!runtime.restrictions().allowBlockInteraction(runtime.revive().snapshotState(player.getUUID()))) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
+        if (runtime.returnPendant().isCasting(player.getUUID())) {
+            runtime.returnPendant().cancelCast(player.getUUID());
             event.setCanceled(true);
         }
     }
@@ -291,6 +314,33 @@ public final class KoEventHandlers {
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
         if (!runtime.restrictions().allowItemUse(runtime.revive().snapshotState(player.getUUID()))) {
             event.setCanceled(true);
+            return;
+        }
+        ItemStack stack = player.getMainHandItem();
+        if (isReturnPendant(stack)) {
+            tryStartReturnPendant(player, stack, runtime);
+            event.setCanceled(true);
+        }
+    }
+
+    private static void tryStartReturnPendant(ServerPlayer player, ItemStack stack, FuguKnockoutRuntime runtime) {
+        long now = player.serverLevel().getGameTime();
+        boolean onCooldown = getPendantCooldownEnd(stack) > now;
+        ReturnPendantLogic.StartVerdict verdict = runtime.returnPendant().startCast(
+                player.getUUID(),
+                player.serverLevel().dimension().location(),
+                onCooldown,
+                player.position(),
+                player.getInventory().selected);
+        if (verdict instanceof ReturnPendantLogic.StartRejected rejected) {
+            if (rejected.reason() == ReturnPendantLogic.StartRejection.ON_COOLDOWN) {
+                long remaining = getPendantCooldownEnd(stack) - now;
+                player.displayClientMessage(Component.literal("Pendant is on cooldown (" + (remaining / 20) + "s)")
+                        .withStyle(ChatFormatting.RED), true);
+            } else if (rejected.reason() == ReturnPendantLogic.StartRejection.WRONG_DIMENSION) {
+                player.displayClientMessage(Component.literal("Pendant only works in the Overworld")
+                        .withStyle(ChatFormatting.RED), true);
+            }
         }
     }
 
@@ -362,7 +412,31 @@ public final class KoEventHandlers {
         runtime.revive().tickExpirations();
         runtime.ally().tick(forgeTickInputs(runtime));
         runtime.soulAnchor().tick(forgeSoulAnchorInputs(runtime));
+        tickReturnPendantCasts(runtime, server);
         sampleSafePositions(runtime, server);
+    }
+
+    static void tickReturnPendantCasts(FuguKnockoutRuntime runtime, MinecraftServer server) {
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!runtime.returnPendant().isCasting(player.getUUID())) {
+                continue;
+            }
+            ItemStack mainHand = player.getMainHandItem();
+            boolean itemMatches = isReturnPendant(mainHand);
+            ReturnPendantLogic.TickVerdict verdict = runtime.returnPendant().tickCast(
+                    player.getUUID(),
+                    player.position(),
+                    player.getInventory().selected,
+                    itemMatches);
+            if (verdict.outcome() == ReturnPendantLogic.TickOutcome.COMPLETE) {
+                long now = server.overworld().getGameTime();
+                applyPendantCooldown(mainHand, now, runtime.config().returnPendantCooldownTicks());
+                teleportToSpawn(player, server);
+            }
+        }
     }
 
     @SubscribeEvent
@@ -371,6 +445,7 @@ public final class KoEventHandlers {
             return;
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
+        runtime.returnPendant().cancelCast(player.getUUID());
         runtime.ally().cancelByTarget(player.getUUID());
         runtime.ally().cancelByHelper(player.getUUID());
         runtime.soulAnchor().cancelByTarget(player.getUUID());
@@ -388,6 +463,7 @@ public final class KoEventHandlers {
         } catch (IllegalStateException uninitialised) {
             return;
         }
+        runtime.returnPendant().cancelCast(player.getUUID());
         clearTransientPlayerState(
                 runtime.actionRegistry(),
                 runtime.movementOverride(),
@@ -659,5 +735,56 @@ public final class KoEventHandlers {
         movementOverride.forget(playerUuid);
         tracker.forget(playerUuid);
         damage.clear(playerUuid);
+    }
+
+    // Return pendant helpers
+
+    private static final String COOLDOWN_END_TAG = "CooldownEnd";
+
+    private static boolean isReturnPendant(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return id != null && (com.fuguteams.fugureviveme.FuguReviveMe.MOD_ID + ":return_pendant").equals(id.toString());
+    }
+
+    static long getPendantCooldownEnd(ItemStack stack) {
+        if (stack.isEmpty() || !stack.hasTag()) {
+            return 0L;
+        }
+        return stack.getTag().getLong(COOLDOWN_END_TAG);
+    }
+
+    static void applyPendantCooldown(ItemStack stack, long now, int cooldownTicks) {
+        stack.getOrCreateTag().putLong(COOLDOWN_END_TAG, now + cooldownTicks);
+    }
+
+    static void teleportToSpawn(ServerPlayer player, MinecraftServer server) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(server, "server");
+        ServerLevel overworld = server.overworld();
+        BlockPos spawnPos = player.getRespawnPosition();
+        ResourceKey<Level> respawnDim = player.getRespawnDimension();
+        float yaw = player.getRespawnAngle();
+        ServerLevel targetLevel;
+        BlockPos targetPos;
+        if (spawnPos != null && respawnDim != null) {
+            targetLevel = server.getLevel(respawnDim);
+            if (targetLevel == null) {
+                targetLevel = overworld;
+                targetPos = overworld.getSharedSpawnPos();
+                yaw = 0F;
+            } else {
+                targetPos = spawnPos;
+            }
+        } else {
+            targetLevel = overworld;
+            targetPos = overworld.getSharedSpawnPos();
+            yaw = 0F;
+        }
+        player.teleportTo(targetLevel,
+                targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5,
+                yaw, 0F);
     }
 }

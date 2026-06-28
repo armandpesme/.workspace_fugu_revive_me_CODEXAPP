@@ -32,6 +32,7 @@ public final class FuguKnockoutRuntime {
     private final MovementOverrideRegistry movementOverride;
     private final BossLinkRegistry bossLinks;
     private final ProlongedKoService prolonged;
+    private final ReturnPendantService returnPendant;
     private final RuntimeConfig config;
 
     private FuguKnockoutRuntime(MinecraftServer server, RuntimeConfig config) {
@@ -69,6 +70,9 @@ public final class FuguKnockoutRuntime {
                 bossLinks,
                 new ProlongedKoService.ServerPlayerResurrectionApplier(),
                 new ProlongedKoService.Config(config.resurrectionSicknessDurationTicks()));
+        this.returnPendant = new ReturnPendantService(
+                overworldClock,
+                config.returnPendantConfig());
     }
 
     public static FuguKnockoutRuntime get() {
@@ -136,6 +140,10 @@ public final class FuguKnockoutRuntime {
         return prolonged;
     }
 
+    public ReturnPendantService returnPendant() {
+        return returnPendant;
+    }
+
     public RuntimeConfig config() {
         return config;
     }
@@ -160,7 +168,11 @@ public final class FuguKnockoutRuntime {
             int prolongedMaxHits,
             double prolongedBossSearchRadius,
             String prolongedBossTag,
-            int resurrectionSicknessDurationTicks
+            int resurrectionSicknessDurationTicks,
+            String returnPendantMainDimension,
+            int returnPendantCastTimeTicks,
+            int returnPendantCooldownTicks,
+            double returnPendantMovementTolerance
     ) {
         public AllyReviveService.AllyReviveConfig allyReviveConfig() {
             return new AllyReviveService.AllyReviveConfig(
@@ -177,6 +189,14 @@ public final class FuguKnockoutRuntime {
                     temporaryRevivedHealthPercent);
         }
 
+        public ReturnPendantService.ReturnPendantConfig returnPendantConfig() {
+            return new ReturnPendantService.ReturnPendantConfig(
+                    net.minecraft.resources.ResourceLocation.parse(returnPendantMainDimension),
+                    returnPendantCastTimeTicks,
+                    returnPendantCooldownTicks,
+                    returnPendantMovementTolerance);
+        }
+
         public static RuntimeConfig fromServerConfig() {
             return new RuntimeConfig(
                     ServerConfig.TEMPORARY_KO_DURATION_TICKS.get(),
@@ -188,7 +208,11 @@ public final class FuguKnockoutRuntime {
                     ServerConfig.PROLONGED_KO_MAX_HITS.get(),
                     ServerConfig.PROLONGED_KO_BOSS_SEARCH_RADIUS.get(),
                     ServerConfig.PROLONGED_KO_BOSS_TAG.get(),
-                    ServerConfig.RESURRECTION_SICKNESS_DURATION_TICKS.get());
+                    ServerConfig.RESURRECTION_SICKNESS_DURATION_TICKS.get(),
+                    ServerConfig.RETURN_PENDANT_MAIN_DIMENSION.get(),
+                    ServerConfig.RETURN_PENDANT_CAST_TIME_TICKS.get(),
+                    ServerConfig.RETURN_PENDANT_COOLDOWN_TICKS.get(),
+                    ServerConfig.RETURN_PENDANT_MOVEMENT_TOLERANCE.get());
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.fuguteams.fugureviveme;
 
 import com.fuguteams.fugureviveme.config.ServerConfig;
+import com.fuguteams.fugureviveme.network.FuguNetwork;
 import com.fuguteams.fugureviveme.registry.ModEffects;
 import com.fuguteams.fugureviveme.registry.ModItems;
 import com.fuguteams.fugureviveme.server.ServerConfigRuntime;
@@ -18,6 +19,7 @@ public final class FuguReviveMe {
         ModItems.register(modEventBus);
         ModEffects.register(modEventBus);
         ServerConfigRuntime.register(modEventBus);
+        FuguNetwork.register();
         context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
     }
 }

@@ -11,7 +11,8 @@
 - Fait : test Gradle initial réussi (`test NO-SOURCE`).
 - Fait : index GitNexus dédié au worktree créé sous `.workspace_fugu_revive_me_CODEXAPP-v1`.
 - Fait : Jalon 1 — fondation Forge et configuration, double revue validée.
-- En cours : Jalon 2 — persistance SavedData et réseau.
+- Fait : Jalon 2 — persistance SavedData clairsemée, réseau Forge, snapshots client et tests, double revue validée puis corrections qualité appliquées.
+- En cours : préparation Jalon 3 — mort définitive et K.O. temporaire.
 - Reste : Jalons 3 à 7, revues, QA runtime et release `1.0.1`.
 
 ### Surprises et discovery
@@ -20,6 +21,8 @@
 - L’index GitNexus doit être relancé après chaque jalon majeur pour connaître les nouveaux symboles.
 - La première revue qualité a détecté l’icône d’effet manquante et un warning d’overlap non branché; les deux défauts sont corrigés et couverts par tests.
 - Forge 47.4.20 accepte l’injection directe de `FMLJavaModLoadingContext` dans le constructeur `@Mod`.
+- Les tests JUnit purs ne peuvent pas instancier un `SimpleChannel` Forge sans bus Forge complet; le channel réseau est donc initialisé lazy en runtime et vérifié par compilation/build + garde-fous source.
+- `ClientboundTrackedKoVisual` ne doit jamais être envoyé avec `entityId=0` par défaut; quand l’entityId n’est pas connu, le service envoie seulement le snapshot self.
 
 ### Decision log
 
@@ -27,18 +30,24 @@
 - 2026-06-28 / GitNexus : utiliser `--index-only` pour ne pas modifier automatiquement les documents protégés.
 - 2026-06-28 / Configuration : matérialiser les valeurs serveur dans un snapshot immuable remplacé atomiquement lors des chargements/rechargements.
 - 2026-06-28 / Assets : fournir immédiatement l’icône de tout effet visible enregistré et vérifier son intégrité dans le JAR.
+- 2026-06-28 / Jalon 2 : encoder l’issue différée via les états persistants `PENDING_DEATH` / `PENDING_REVIVE` plutôt qu’un champ séparé, afin de garder `KoRecord` compact.
+- 2026-06-28 / Jalon 2 : isoler les handlers client via `DistExecutor` et réflexion contrôlée, sans import du package client depuis le réseau common, pour réduire le risque dedicated server.
+- 2026-06-28 / Jalon 2 : exposer un lookup optionnel `UUID -> entityId` dans `ReviveService` pour envoyer les visuals tracking seulement quand l’entité est connue.
 
 ### Outcome et retrospective
 
 - `.\gradlew.bat test` exécuté depuis le worktree `project-gradle/` : `BUILD SUCCESSFUL in 11s`, aucune source de test ou Java présente.
 - Jalon 1 : `.\gradlew.bat test --rerun-tasks` et `.\gradlew.bat build --rerun-tasks` réussis; 23 tests, aucun échec.
-- Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` et `fugu_revive_me-1.0.1-sources.jar`.
-- Revues : conformité validée; qualité validée après corrections, aucun problème restant.
+- Jalon 2 : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 9s`, 47 tests, 0 échec, 0 erreur.
+- Jalon 2 : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
+- Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (59 967 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (28 825 bytes).
+- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking.
 - Risque restant : avertissement générique ForgeGradle sur une future incompatibilité Gradle 9, sans effet sur Gradle 8.8.
+- Vérification non exécutée : `runServer` / `runClient`, car Jalon 2 reste infrastructure réseau/persistance et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay.
 
 ### Reprise agent sans état
 
-Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus au commit du Jalon 1, analyser l’impact des nouveaux symboles puis déléguer le Jalon 2 à un agent réseau pour `ReviveState`, `KoRecord`, `KnockoutSavedData`, la file d’échéances et les packets sans trafic par tick.
+Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus après commit Jalon 2, lancer l’analyse d’impact des symboles de mort/respawn, puis déléguer le Jalon 3 à un agent gameplay pour interception des morts, K.O. temporaire, restrictions serveur, relève alliée et Ancre d’Âme sans toucher aux drops/XP vanilla.
 
 ## 1. Résumé
 

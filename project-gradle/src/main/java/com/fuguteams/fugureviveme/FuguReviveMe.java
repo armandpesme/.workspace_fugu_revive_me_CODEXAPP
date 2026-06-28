@@ -3,6 +3,7 @@ package com.fuguteams.fugureviveme;
 import com.fuguteams.fugureviveme.config.ServerConfig;
 import com.fuguteams.fugureviveme.network.FuguNetwork;
 import com.fuguteams.fugureviveme.registry.ModEffects;
+import com.fuguteams.fugureviveme.registry.ModCreativeTabs;
 import com.fuguteams.fugureviveme.registry.ModItems;
 import com.fuguteams.fugureviveme.server.FuguKnockoutRuntime;
 import com.fuguteams.fugureviveme.server.KoEventHandlers;
@@ -26,6 +27,7 @@ public final class FuguReviveMe {
         IEventBus modEventBus = context.getModEventBus();
         ModItems.register(modEventBus);
         ModEffects.register(modEventBus);
+        ModCreativeTabs.register(modEventBus);
         ServerConfigRuntime.register(modEventBus);
         FuguNetwork.register();
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> registerClient(modEventBus));

@@ -19,7 +19,8 @@
 - Fait : merge de `codex/jalon-5` dans `master` puis validation post-merge par `.\gradlew.bat build` sur `master`.
 - Fait : correction du skill local `doubt-qcm-pause` pour viser le QCM natif ADE (`request_user_input` dans Codex App quand disponible) et non un outil générique `question`; miroirs `.codex` et `.opencode` synchronisés.
 - Fait : Jalon 6 — overlay K.O. temporaire, écran K.O. prolongé non pausant, VFX client, textures/modèles/langues des items, tag boss vide extensible, tests assets/UI et correctifs qualité appliqués.
-- Reste : Jalon 7, QA runtime et release `1.0.1`.
+- Fait : Jalon 7 technique — commandes OP `/fugurevive test kotemporaire <cible>` et `/fugurevive test kopermanant <cible>`, creative tab Fugu Revive Me, vérification absence Mixin, `clean build` final `1.0.1`.
+- Reste : QA runtime manuelle/multi-client, validation Armand et feedback final de release si demandé.
 
 ### Surprises et discovery
 
@@ -40,6 +41,8 @@
 - 2026-06-28 / Reprise Jalon 6 : l'analyse rapide `rg` + GitNexus + subagents confirme que le jalon 6 n'a pas encore de surface d'implémentation réelle dans `project-gradle/` : pas d'overlay `GuiGraphics`, pas d'écran renderer, pas de particules/sons branchés, pas de modèles ou textures d'items. Le client existant stocke surtout les snapshots réseau.
 - 2026-06-28 / Skill QCM : le skill `doubt-qcm-pause` pointait vers un outil générique `question`, alors que Codex App expose `request_user_input` seulement dans certains modes/outils disponibles. Le skill est corrigé pour utiliser le QCM natif quand l'ADE l'expose et signaler explicitement l'indisponibilité avant tout fallback texte.
 - 2026-06-28 / Jalon 6 : la durée des jauges client ne doit pas hardcoder `1200` ou `6000` ticks. Le client conserve la durée observée depuis le premier snapshot reçu pour l'état/action courant et interpole ensuite localement.
+- 2026-06-28 / Jalon 7 : `mod_version` était déjà à `1.0.1` dans `gradle.properties`; aucune incrémentation supplémentaire n'a été nécessaire pour produire les JAR `1.0.1`.
+- 2026-06-28 / Jalon 7 : la recherche `rg "@Mixin\\(|@Inject\\(|mixin|Mixin"` sur `project-gradle/src`, `build.gradle`, `gradle.properties` et ressources ne trouve aucun Mixin.
 
 ### Decision log
 
@@ -81,6 +84,7 @@
 - 2026-06-28 / Jalon 6 UI boss : choix humain A validé. L'écran prolongé affiche seulement `Boss lié` / `Statut en attente` tant qu'aucun signal serveur fiable de victoire boss n'est branché; ne pas renommer le packet ni afficher `Boss vaincu` dans ce jalon sans nouvelle validation.
 - 2026-06-28 / Skill QCM : `doubt-qcm-pause` doit appeler `request_user_input` dans Codex App quand l'outil est disponible (1 question, 2-3 options, header <= 12 caractères). Si l'outil natif est absent, l'agent doit le dire et ne présenter un QCM texte que comme dégradé explicite.
 - 2026-06-28 / Jalon 6 : les autres clients reçoivent désormais un visual `ALIVE` quand un joueur sort du K.O.; le store client supprime alors l'entrée tracking locale pour éviter une posture/particules fantômes.
+- 2026-06-28 / Jalon 7 : conserver le literal demandé `kopermanant` pour la commande OP, et l'interpréter comme un K.O. prolongé (`ReviveState.PROLONGED_KO`) sans boss lié. Le literal `kotemporaire` force un `TEMPORARY_KO`. Les deux commandes utilisent la config serveur courante pour la durée.
 
 ### Outcome et retrospective
 
@@ -108,13 +112,18 @@
 - Jalon 6 (branche `codex/jalon-6`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 255 tests, 0 échec, 0 erreur. Ajouts principaux : `ClientUiFormatTest`, `ClientReviveStateStoreTest` étendu, `ItemAssetIntegrityTest` pour modèles/textures/langues/tag boss.
 - Jalon 6 (branche `codex/jalon-6`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
 - Jalon 6 (branche `codex/jalon-6`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (185 192 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (70 819 bytes).
+- Jalon 7 (branche `codex/jalon-7`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`. Ajouts principaux : tests de source/record pour `FuguDebugCommands` et `ModCreativeTabs`.
+- Jalon 7 (branche `codex/jalon-7`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
+- Jalon 7 (branche `codex/jalon-7`) : `.\gradlew.bat clean build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 15s`, 11 tâches exécutées.
+- Jalon 7 (branche `codex/jalon-7`) : Artefacts produits après `clean build` : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (190 427 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (73 105 bytes).
+- Jalon 7 smoke runtime : `.\gradlew.bat runClient` exécuté depuis `project-gradle/` le 2026-06-28. Le client Forge 47.4.20 a chargé `fugu_revive_me` version `1.0.1`, lancé le monde intégré `New World`, complété le handshake local sur `fugu_revive_me:main` et connecté le joueur `Dev`. La commande a été arrêtée volontairement par `Ctrl+C` après validation du démarrage, donc code retour `1` attendu.
 - Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité validée; qualité validée après corrections sur la restauration de vitesse, la lecture de la config boss, la fuite mémoire à la déconnexion et le reset du runtime à l’arrêt; Jalon 4 conformité PARTIELLEMENT CONFORME (1 critique + 1 majeure) et qualité BON (1 majeur + 1 mineur) après corrections sur le handler de reconnexion, la suppression du double `tickExpirations`, l'extension de `transitionOnBossDespawn` à `FULLY_DOWNED`, la suppression du code mort et l'ajout de loggers/structures concurrentes.
 - Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release. La détection chunk-unload vs despawn-permanent est volontairement simplifiée dans le wire-up (hook `onBossDespawn` appelé seulement si le boss est lié à un joueur) ; un affinage (par exemple via `MobSpawnEvent.AllowDespawn` ou un suivi `EntityJoinLevelEvent` / `EntityLeaveLevelEvent` chronométré) sera étudié au Jalon 7. Suite aux correctifs qualité Jalon 4, le wire-up de `onServerTick` ne nettoie plus le `BossLinkRegistry` sur timeout de KO (seul `ReviveService.tickExpirations` est appelé, qui ne touche pas le registre). Cela laisse un lien orphelin pour chaque joueur en `PROLONGED_KO`/`FULLY_DOWNED` qui expire par timeout. Le lien est ensuite ignoré par `onBossDeath`/`onBossDespawn` grâce au filtrage par état (`transitionOnBossDeath`/`transitionOnBossDespawn` ignorent les états non-`PROLONGED_KO`/`FULLY_DOWNED`) ; un nettoyage dédié pourra être ajouté au Jalon 7 si la fuite devient visible.
 - Vérification non exécutée : `runServer` / `runClient`, car Jalon 4 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
 
 ### Reprise agent sans état
 
-Branche courante : `codex/jalon-6`, créée depuis `master` validé post-merge. Modifications locales préexistantes hors scope : `AGENTS.md` et `CLAUDE.md`. Jalon 6 compilé et buildé; prochaine action : ouvrir Jalon 7 (commandes, creative tab, version/release, QA runtime) après revue finale ou merge de la branche.
+Branche courante : `codex/jalon-7`, créée depuis `master` contenant le jalon 6. Modifications locales préexistantes hors scope : `AGENTS.md` et `CLAUDE.md`. Jalon 7 technique compilé avec `test`, `build`, `clean build` et smoke `runClient`; prochaine action : QA serveur dédié/deux clients si possible, validation Armand, puis merge/release.
 
 ## 1. Résumé
 

@@ -1,5 +1,7 @@
 {
   "effect.fugu_revive_me.resurrection_sickness": "Resurrection Sickness",
+  "commands.fugu_revive_me.test_ko.success": "%s forced into %s",
+  "itemGroup.fugu_revive_me.main": "Fugu Revive Me",
   "item.fugu_revive_me.return_pendant": "Return Pendant",
   "item.fugu_revive_me.soul_anchor": "Soul Anchor",
   "overlay.fugu_revive_me.ally_revive": "Revive in progress",

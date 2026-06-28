@@ -10,7 +10,11 @@
 - citresewn-1.20.1-5.jar
 - Epic Fight Forge `20.14.17-1.20.1`
 - Projet Gradle : `project-gradle/`
-- notre repo:
+
+Ressource | URL |
+|---|---|
+| **Dépôt GitHub** | https://github.com/armandpesme/.workspace_fugu_revive_me_CODEXAPP |
+| **Schéma GitNexus (UI locale)** | http://localhost:4747/
 
 #### Structure
 
@@ -36,19 +40,35 @@
 
 ## Conditions d’acceptation
 
-Une tâche est considérée comme terminée lorsque les conditions suivantes sont remplies :
+Une tâche ou un jalon est considéré comme terminé uniquement lorsque les conditions suivantes sont remplies :
 
-1. L’objectif défini a été atteint et le plan a été entièrement exécuté.
-2. Les erreurs détectées ont été corrigées.
-3. Un lancement du client de développement a été effectué avec succès.
-4. Un build de développement a été généré et validé.
-5. Le fichier source jar versionné `*-sources.jar` a également été généré, par exemple `fugu_transmog-1.0.1-sources.jar`. Ne pas créer de fichier littéral `mod-source.jar`.
-6. Le résultat a été testé manuellement par le responsable du projet.
-7. Le retour de test est positif.
-8. Les injecteurs critiques conservent leurs contraintes obligatoires en production, notamment require = 1 ou une valeur minimale adaptée. Ils ne doivent pas être rendus permissifs avant la release.
-9. Les options de diagnostic réservées au développement, telles que mixin.debug.countInjections, ont été désactivées avant le build final.
-10. La version du mod a été incrémentée (+0.0.1)
-11. Un clean build final a été exécuté avec succès.
-12. creation d'un fichier feedback dans `./docs/context/` <docs+date+version+modid>.md
+1. L’objectif défini dans le prompt a été atteint.
+2. Le plan annoncé a été entièrement exécuté, sauf blocage explicitement documenté.
+3. Les erreurs détectées pendant le travail ont été corrigées ou clairement signalées.
+4. Le code compile.
+5. Un lancement du client de développement a été effectué avec succès lorsque la tâche impacte le comportement en jeu.
+6. Les tests manuels demandés ont été effectués par le responsable du projet lorsque la tâche le nécessite.
+7. Le retour de test est positif ou les problèmes restants sont clairement listés.
+8. Les injecteurs critiques conservent leurs contraintes obligatoires en production, notamment `require = 1` ou une valeur minimale adaptée. Ils ne doivent pas être rendus permissifs pour masquer une erreur.
+9. Les options de diagnostic réservées au développement, telles que `mixin.debug.countInjections`, ne doivent pas être activées dans un état final.
+10. Le fichier `end-off.md` a été mis à jour via la commande/skill dédiée si Armand le demande.
+11. Si un feedback long est demandé, créer un fichier dans `./docs/context/` au format `<date>-<version>-<modid>-feedback.md`.
 
-La tâche peut être clôturée uniquement après la validation de l’ensemble de ces étapes.
+La tâche ne peut pas être clôturée si un point bloquant est connu mais non signalé.
+
+## Conditions de release finale
+
+Une release finale est considérée comme prête uniquement lorsque les conditions suivantes sont remplies :
+
+1. Toutes les conditions d’acceptation de tâche/jalon sont validées.
+2. Un build de développement a été généré et validé.
+3. Le fichier source JAR versionné `*-sources.jar` a été généré, par exemple `fugu_revive_me-1.0.1-sources.jar`.
+4. Ne jamais créer de fichier littéral nommé `mod-source.jar`.
+5. La version du mod a été incrémentée de `+0.0.1` si la release inclut des changements de code.
+6. Un clean build final a été exécuté avec succès.
+7. Les options de debug/dev ont été désactivées avant le build final.
+8. Le résultat a été testé manuellement par le responsable du projet.
+9. Le retour de test final est positif.
+10. Un fichier feedback final a été créé dans `./docs/context/` au format `<date>-<version>-<modid>-feedback.md`.
+
+La release peut être clôturée uniquement après validation de l’ensemble de ces étapes.

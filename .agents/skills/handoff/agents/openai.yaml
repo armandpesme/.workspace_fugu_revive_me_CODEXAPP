@@ -1,0 +1,10 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Resume court d'un jalon dans HANDOFF.md (80 lignes max, factuel)."
+  default_prompt: |
+    Utilise $handoff.
+
+    Mets a jour HANDOFF.md a la racine avec un resume court du jalon: fichiers modifies, tests reellement lances, non-fait, risques restants, prompt du prochain jalon, decisions a valider. Maximum 80 lignes. Format strict, pas de narration.
+
+policy:
+  allow_implicit_invocation: false

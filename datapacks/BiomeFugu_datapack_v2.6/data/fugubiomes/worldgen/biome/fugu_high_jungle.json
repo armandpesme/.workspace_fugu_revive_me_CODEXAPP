@@ -1,0 +1,60 @@
+{
+    "temperature":  0.95,
+    "downfall":  0.9,
+    "effects":  {
+                    "sky_color":  8516030,
+                    "fog_color":  8815477,
+                    "water_color":  1108763,
+                    "water_fog_color":  329011,
+                    "foliage_color":  8421376,
+                    "grass_color":  4673854,
+                    "grass_color_modifier":  "none",
+                    "particle":  {
+                                     "options":  {
+                                                     "type":  "minecraft:totem_of_undying"
+                                                 },
+                                     "probability":  0.005
+                                 }
+                },
+    "has_precipitation":  true,
+    "spawners":  {
+                     "monster":  [
+
+                                 ],
+                     "creature":  [
+
+                                  ],
+                     "ambient":  [
+
+                                 ],
+                     "axolotls":  [
+
+                                  ],
+                     "underground_water_creature":  [
+
+                                                    ],
+                     "water_creature":  [
+
+                                        ],
+                     "water_ambient":  [
+
+                                       ],
+                     "misc":  [
+
+                              ]
+                 },
+    "spawn_costs":  {
+
+                    },
+    "carvers":  {
+                    "air":  [
+
+                            ],
+                    "liquid":  [
+
+                               ]
+                },
+    "features":  [
+
+                 ]
+}

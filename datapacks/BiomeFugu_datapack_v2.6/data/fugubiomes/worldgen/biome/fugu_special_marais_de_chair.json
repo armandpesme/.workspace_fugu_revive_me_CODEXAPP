@@ -1,0 +1,60 @@
+{
+    "temperature":  0.9,
+    "downfall":  0.85,
+    "effects":  {
+                    "sky_color":  8528932,
+                    "fog_color":  3218235,
+                    "water_color":  3804948,
+                    "water_fog_color":  329011,
+                    "foliage_color":  16738922,
+                    "grass_color":  9394794,
+                    "grass_color_modifier":  "none",
+                    "particle":  {
+                                     "options":  {
+                                                     "type":  "born_in_chaos_v1:ritual"
+                                                 },
+                                     "probability":  0.005
+                                 }
+                },
+    "has_precipitation":  true,
+    "spawners":  {
+                     "monster":  [
+
+                                 ],
+                     "creature":  [
+
+                                  ],
+                     "ambient":  [
+
+                                 ],
+                     "axolotls":  [
+
+                                  ],
+                     "underground_water_creature":  [
+
+                                                    ],
+                     "water_creature":  [
+
+                                        ],
+                     "water_ambient":  [
+
+                                       ],
+                     "misc":  [
+
+                              ]
+                 },
+    "spawn_costs":  {
+
+                    },
+    "carvers":  {
+                    "air":  [
+
+                            ],
+                    "liquid":  [
+
+                               ]
+                },
+    "features":  [
+
+                 ]
+}

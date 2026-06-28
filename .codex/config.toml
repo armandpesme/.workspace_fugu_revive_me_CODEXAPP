@@ -38,10 +38,15 @@ tool_timeout_sec = 120.0
 required = false
 env_vars = ["CONTEXT7_API_KEY"]
 
+[mcp_servers.blockbench]
+url = "http://localhost:3000/bb-mcp"
+required = false
+
 [skills]
 config = [
   { path = "../.agents/skills/braintime", enabled = true },
   { path = "../.agents/skills/context7-mcp", enabled = true },
+  { path = "../.agents/skills/blockbench-modeling", enabled = true },
   { path = "../.agents/skills/forge-workspace-onboarding", enabled = true },
   { path = "../.agents/skills/forge-edit-scope", enabled = true },
   { path = "../.agents/skills/forge-client-server-boundaries", enabled = true },
@@ -55,6 +60,7 @@ config = [
   { path = "../.agents/skills/forge-qa", enabled = true },
   { path = "../.agents/skills/forge-armor-variant-port", enabled = true },
   { path = "../.agents/skills/exee-plan", enabled = true },
+  { path = "../.agents/skills/handoff", enabled = true },
   { path = "../.agents/skills/workspace-agent-skill-maintenance", enabled = true },
   { path = "../.agents/skills/retrospective-loop", enabled = true },
   { path = "../.agents/skills/gitnexus-cli", enabled = true },

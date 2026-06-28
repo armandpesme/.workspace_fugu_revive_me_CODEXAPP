@@ -1,0 +1,60 @@
+{
+    "temperature":  0.8,
+    "downfall":  0.4,
+    "effects":  {
+                    "sky_color":  14479346,
+                    "fog_color":  16748800,
+                    "water_color":  58879,
+                    "water_fog_color":  329011,
+                    "foliage_color":  10433818,
+                    "grass_color":  15450186,
+                    "grass_color_modifier":  "none",
+                    "particle":  {
+                                     "options":  {
+                                                     "type":  "biomeswevegone:witch_hazel_leaves"
+                                                 },
+                                     "probability":  0.001
+                                 }
+                },
+    "has_precipitation":  true,
+    "spawners":  {
+                     "monster":  [
+
+                                 ],
+                     "creature":  [
+
+                                  ],
+                     "ambient":  [
+
+                                 ],
+                     "axolotls":  [
+
+                                  ],
+                     "underground_water_creature":  [
+
+                                                    ],
+                     "water_creature":  [
+
+                                        ],
+                     "water_ambient":  [
+
+                                       ],
+                     "misc":  [
+
+                              ]
+                 },
+    "spawn_costs":  {
+
+                    },
+    "carvers":  {
+                    "air":  [
+
+                            ],
+                    "liquid":  [
+
+                               ]
+                },
+    "features":  [
+
+                 ]
+}

@@ -1,0 +1,91 @@
+{
+    "temperature":  2.0,
+    "downfall":  0.0,
+    "effects":  {
+                    "sky_color":  16771584,
+                    "fog_color":  16733440,
+                    "water_color":  65488,
+                    "water_fog_color":  7077865,
+                    "foliage_color":  16753920,
+                    "grass_color":  16764416,
+                    "particle":  {
+                                     "options":  {
+                                                     "type":  "dragonfire:fire"
+                                                 },
+                                     "probability":  0.001
+                                 }
+                },
+    "has_precipitation":  false,
+    "spawners":  {
+                     "monster":  [
+
+                                 ],
+                     "creature":  [
+
+                                  ],
+                     "ambient":  [
+
+                                 ],
+                     "axolotls":  [
+
+                                  ],
+                     "underground_water_creature":  [
+
+                                                    ],
+                     "water_creature":  [
+
+                                        ],
+                     "water_ambient":  [
+
+                                       ],
+                     "misc":  [
+
+                              ]
+                 },
+    "spawn_costs":  {
+
+                    },
+    "carvers":  {
+                    "air":  [
+
+                            ],
+                    "liquid":  [
+
+                               ]
+                },
+    "features":  [
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ],
+                     [
+
+                     ]
+                 ]
+}

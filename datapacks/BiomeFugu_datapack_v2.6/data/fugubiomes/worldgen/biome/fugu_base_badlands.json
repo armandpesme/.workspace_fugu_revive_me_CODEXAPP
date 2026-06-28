@@ -1,0 +1,66 @@
+{
+    "temperature":  2.0,
+    "downfall":  0.0,
+    "effects":  {
+                    "sky_color":  12508651,
+                    "fog_color":  14201482,
+                    "water_color":  7311272,
+                    "water_fog_color":  329011,
+                    "foliage_color":  6963087,
+                    "grass_color":  12884570,
+                    "grass_color_modifier":  "none",
+                    "particle":  {
+                                     "options":  {
+                                                     "type":  "minecraft:dust",
+                                                     "color":  [
+                                                                   0.878,
+                                                                   0.639,
+                                                                   0.416
+                                                               ],
+                                                     "scale":  1.0
+                                                 },
+                                     "probability":  0.01
+                                 }
+                },
+    "has_precipitation":  false,
+    "spawners":  {
+                     "monster":  [
+
+                                 ],
+                     "creature":  [
+
+                                  ],
+                     "ambient":  [
+
+                                 ],
+                     "axolotls":  [
+
+                                  ],
+                     "underground_water_creature":  [
+
+                                                    ],
+                     "water_creature":  [
+
+                                        ],
+                     "water_ambient":  [
+
+                                       ],
+                     "misc":  [
+
+                              ]
+                 },
+    "spawn_costs":  {
+
+                    },
+    "carvers":  {
+                    "air":  [
+
+                            ],
+                    "liquid":  [
+
+                               ]
+                },
+    "features":  [
+
+                 ]
+}

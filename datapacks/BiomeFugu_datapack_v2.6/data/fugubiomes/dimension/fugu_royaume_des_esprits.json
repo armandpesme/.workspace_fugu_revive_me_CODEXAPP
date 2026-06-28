@@ -1,0 +1,11 @@
+{
+  "type": "fugubiomes:royaume_des_esprits",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "fugubiomes:royaume_esprits_islands",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "fugubiomes:fugu_low_royaume_des_esprits"
+    }
+  }
+}

@@ -42,6 +42,49 @@ read readme.md et plan.md pour comprendre le contexte, les objectifs métier, le
 - Toute décision doit être fondée sur des sources vérifiées et une réflexion explicite.
 - LLM/IA/agents utiliser en fonction de l'ADE ou IDE ou CLI dans le quel il se trouve il doit utiliser le dossier correspondant : `.github` ou `.codex` ou `.antigravity` ou `.claude`.
 
+## Droit d’initiative contrôlé
+
+L’agent peut prendre des décisions techniques locales lorsque cela permet de terminer le jalon sans modifier le design validé.
+
+Il peut corriger un problème hors périmètre uniquement si cette correction est nécessaire pour :
+
+* faire compiler le projet ;
+* débloquer le jalon en cours ;
+* corriger une erreur directement causée par ses modifications ;
+* éviter un bug évident et limité.
+
+Cependant, si une décision peut modifier le design, le gameplay, l’architecture générale, les documents protégés ou le périmètre du jalon, l’agent doit s’arrêter et poser une question à Armand.
+
+La question doit être courte, cadrée et proposer plusieurs choix.
+
+Format recommandé :
+
+```md
+Question pour validation :
+
+Contexte :
+...
+
+Choix recommandés :
+A. ...
+B. ...
+C. ...
+
+Recommandation de l’agent :
+...
+
+Impact si on choisit A :
+...
+Impact si on choisit B :
+...
+Impact si on choisit C :
+...
+```
+
+L’agent doit privilégier une question de validation plutôt qu’une décision autonome lorsqu’il existe un risque de dérive fonctionnelle.
+
+Si l’agent continue sans poser de question, il doit documenter la décision prise dans `end-off.md`.
+
 ## Workflow Codex
 
 - Utiliser les fichiers locaux et `rg` en premier niveau pour identifier les fichiers, symboles et configurations concernés.
@@ -52,6 +95,19 @@ read readme.md et plan.md pour comprendre le contexte, les objectifs métier, le
 - Pour les assets et le datagen, vérifier les chemins, le `mod_id` et la validité des fichiers JSON.
 - Si une vérification n’est pas exécutée, le signaler clairement.
 
+## Documents protégés
+
+Les fichiers suivants sont des sources de vérité et ne doivent pas être modifiés automatiquement par l’agent :
+
+* `FUGU_REVIVE_ME_DESIGN.md`
+* `AGENTS.md`
+* `README.md`
+
+L’agent peut les lire et s’y référer, mais ne doit pas les modifier sauf demande explicite d’Armand.
+
+Le fichier de suivi `HANDOFF.md` peut être mis à jour uniquement lorsqu’Armand le demande ou lorsqu’une commande/skill dédiée au handoff est utilisée.
+
+Si une règle du design semble incorrecte, incomplète ou incompatible avec le code, l’agent doit le signaler dans `HANDOFF.md` ou dans sa réponse, sans modifier directement les documents protégés.
 
 ## EXEE Plan
 
@@ -92,11 +148,11 @@ Agents locaux disponibles: `maestro`, `planner`, `explorer`, `architect`, `gamep
 
 Prompts disponibles: `.github/prompts/forge-fix.prompt.md`, `.github/prompts/forge-plan.prompt.md`, `.github/prompts/forge-review.prompt.md`; miroirs Codex dans `.codex/prompts/`.
 
-Skills actifs: lire le `SKILL.md` concerne dans `.agents/skills/<nom>/` au moment ou sa description correspond a la tache. Ne pas recopier les instructions de skills dans ce fichier.
+Skills actifs: lire le `SKILL.md` concerne dans `.agents/skills/<nom>/` au moment ou sa description correspond a la tache. Ne pas recopier les instructions de skills dans ce fichier. Skill local ajoute: `blockbench-modeling` pour Blockbench MCP.
 
 Catalogue par familles:
 
-- Cadrage, reprise, suivi: `braintime`, `forge-workspace-onboarding`, `exee-plan`, `retrospective-loop`, `workspace-agent-skill-maintenance`.
+- Cadrage, reprise, suivi: `braintime`, `forge-workspace-onboarding`, `exee-plan`, `handoff`, `retrospective-loop`, `workspace-agent-skill-maintenance`.
 - Forge/Minecraft: `explore-doc`, `mod-architecture`, `forge-edit-scope`, `forge-build-check`, `forge-runtime-debug`, `forge-client-server-boundaries`, `forge-assets-integrity`, `forge-mixin-safety`, `forge-qa`, `minecraft-log-tools`, `forge-armor-variant-port`.
 - GitNexus: `gitnexus-cli`, `gitnexus-guide`, `gitnexus-exploring`, `gitnexus-debugging`, `gitnexus-impact-analysis`, `gitnexus-refactoring`.
 - Fichiers et formats: `context7-mcp`, `jq-json-patch`, `multi-format-patch`, `py-complex-patch`.
@@ -138,14 +194,14 @@ P-oser deux questions finales juste avant le plan.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **fugu_transmog-1.0.0_STACK-FUGUTEAMS** (608 symbols, 1329 relationships, 43 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **.workspace_fugu_revive_me_CODEXAPP** (83 symbols, 68 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
 ## Always Do
 
 - **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "master"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
 - When exploring unfamiliar code, use `query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
 - When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
@@ -161,10 +217,10 @@ This project is indexed by GitNexus as **fugu_transmog-1.0.0_STACK-FUGUTEAMS** (
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/fugu_transmog-1.0.0_STACK-FUGUTEAMS/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/fugu_transmog-1.0.0_STACK-FUGUTEAMS/clusters` | All functional areas |
-| `gitnexus://repo/fugu_transmog-1.0.0_STACK-FUGUTEAMS/processes` | All execution flows |
-| `gitnexus://repo/fugu_transmog-1.0.0_STACK-FUGUTEAMS/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/.workspace_fugu_revive_me_CODEXAPP/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/.workspace_fugu_revive_me_CODEXAPP/clusters` | All functional areas |
+| `gitnexus://repo/.workspace_fugu_revive_me_CODEXAPP/processes` | All execution flows |
+| `gitnexus://repo/.workspace_fugu_revive_me_CODEXAPP/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

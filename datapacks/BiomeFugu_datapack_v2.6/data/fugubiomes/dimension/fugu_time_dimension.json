@@ -1,0 +1,15 @@
+{
+    "type": "fugubiomes:espace_temps",
+    "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+            "layers": [
+                {
+                    "height": 1,
+                    "block": "minecraft:air"
+                }
+            ],
+                        "biome":"fugubiomes:fugu_low_space"
+        }
+    }
+}

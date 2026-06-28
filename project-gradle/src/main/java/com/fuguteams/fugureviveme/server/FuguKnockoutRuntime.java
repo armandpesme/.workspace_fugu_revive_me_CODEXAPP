@@ -30,6 +30,8 @@ public final class FuguKnockoutRuntime {
     private final KnockoutDamageTracker damage;
     private final LastSafePositionTracker tracker;
     private final MovementOverrideRegistry movementOverride;
+    private final BossLinkRegistry bossLinks;
+    private final ProlongedKoService prolonged;
     private final RuntimeConfig config;
 
     private FuguKnockoutRuntime(MinecraftServer server, RuntimeConfig config) {
@@ -49,12 +51,24 @@ public final class FuguKnockoutRuntime {
         this.damage = new KnockoutDamageTracker();
         this.tracker = new LastSafePositionTracker();
         this.movementOverride = new MovementOverrideRegistry();
+        this.bossLinks = new BossLinkRegistry();
         this.ally = new AllyReviveService(
                 actionRegistry, revive, damage, overworldClock, config.allyReviveConfig());
         this.soulAnchor = new SoulAnchorService(
                 actionRegistry, revive, damage, overworldClock, config.soulAnchorConfig());
         this.respawn = new KnockoutRespawnService();
         this.restrictions = new KnockoutRestrictionService();
+        this.prolonged = new ProlongedKoService(
+                dataSupplier,
+                overworldClock,
+                uuid -> {
+                    var player = server.getPlayerList().getPlayer(uuid);
+                    return player == null ? java.util.OptionalInt.empty() : java.util.OptionalInt.of(player.getId());
+                },
+                new ReviveSyncService(new ForgePacketSink(server)),
+                bossLinks,
+                new ProlongedKoService.ServerPlayerResurrectionApplier(),
+                new ProlongedKoService.Config(config.resurrectionSicknessDurationTicks()));
     }
 
     public static FuguKnockoutRuntime get() {
@@ -112,6 +126,14 @@ public final class FuguKnockoutRuntime {
 
     public MovementOverrideRegistry movementOverride() {
         return movementOverride;
+    }
+
+    public BossLinkRegistry bossLinks() {
+        return bossLinks;
+    }
+
+    public ProlongedKoService prolonged() {
+        return prolonged;
     }
 
     public RuntimeConfig config() {

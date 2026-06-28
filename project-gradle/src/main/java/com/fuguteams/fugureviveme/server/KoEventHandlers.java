@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -74,6 +75,7 @@ public final class KoEventHandlers {
     public static void onLivingDeath(LivingDeathEvent event) {
         Entity entity = event.getEntity();
         if (!(entity instanceof ServerPlayer player)) {
+            handleNonPlayerDeath(event);
             return;
         }
         MinecraftServer server = player.getServer();
@@ -93,15 +95,36 @@ public final class KoEventHandlers {
                         service.config().prolongedBossTag(),
                         service.config().prolongedBossSearchRadius())
                 : Optional.empty();
-        int durationTicks = service.config().temporaryDurationTicks();
-        int maxHits = service.config().temporaryMaxHits();
+        ProlongedKoLogic.InitialState initial = ProlongedKoLogic.selectInitialState(
+                koType,
+                nearbyBoss.isPresent(),
+                service.config().temporaryDurationTicks(),
+                service.config().prolongedDurationTicks());
+        if (initial instanceof ProlongedKoLogic.RejectChoice) {
+            return;
+        }
+        BiomeKoClassifier.KoType effectiveBiome;
+        Optional<UUID> effectiveBoss;
+        int durationTicks;
+        int maxHits;
+        if (initial instanceof ProlongedKoLogic.ProlongedChoice) {
+            effectiveBiome = BiomeKoClassifier.KoType.PROLONGED;
+            effectiveBoss = nearbyBoss;
+            durationTicks = service.config().prolongedDurationTicks();
+            maxHits = service.config().prolongedMaxHits();
+        } else {
+            effectiveBiome = BiomeKoClassifier.KoType.TEMPORARY;
+            effectiveBoss = Optional.empty();
+            durationTicks = service.config().temporaryDurationTicks();
+            maxHits = service.config().temporaryMaxHits();
+        }
         Optional<KoRecord> created = service.revive().tryEnterKnockoutOnDeath(
                 player.getUUID(),
                 level.dimension().location(),
                 player.blockPosition(),
-                koType,
+                effectiveBiome,
                 hasSickness,
-                nearbyBoss,
+                effectiveBoss,
                 durationTicks,
                 maxHits);
         if (created.isPresent()) {
@@ -110,7 +133,40 @@ public final class KoEventHandlers {
             player.invulnerableTime = 40;
             player.setLastHurtByPlayer(null);
             player.setLastHurtByMob(null);
+            if (effectiveBoss.isPresent()) {
+                service.prolonged().linkBossToPlayer(effectiveBoss.get(), player.getUUID());
+            }
         }
+    }
+
+    private static void handleNonPlayerDeath(LivingDeathEvent event) {
+        Entity entity = event.getEntity();
+        if (entity.level().isClientSide()) {
+            return;
+        }
+        FuguKnockoutRuntime runtime;
+        try {
+            runtime = FuguKnockoutRuntime.get();
+        } catch (IllegalStateException uninitialised) {
+            return;
+        }
+        if (!isBossEntity(entity, runtime.config().prolongedBossTag())) {
+            return;
+        }
+        runtime.prolonged().onBossDeath(entity.getUUID());
+    }
+
+    private static boolean isBossEntity(Entity entity, String bossTagString) {
+        if (entity instanceof ServerPlayer) {
+            return false;
+        }
+        if (entity.getType() == null) {
+            return false;
+        }
+        return parseBossTag(bossTagString)
+                .map(id -> TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE, id))
+                .map(tag -> entity.getType().is(tag))
+                .orElse(false);
     }
 
     // Hit handling
@@ -272,7 +328,9 @@ public final class KoEventHandlers {
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
         ReviveState previousState = runtime.revive().snapshotState(player.getUUID());
-        if (runtime.respawn().shouldTransfer(previousState)) {
+        if (previousState == ReviveState.PENDING_REVIVE) {
+            runtime.prolonged().resurrectOnKoPosition(player.getUUID());
+        } else if (runtime.respawn().shouldTransfer(previousState)) {
             runtime.revive().transitionToAlive(player.getUUID());
             runtime.respawn().transferToGenericSpawn(player, server);
         }
@@ -297,6 +355,7 @@ public final class KoEventHandlers {
         }
         FuguKnockoutRuntime runtime = FuguKnockoutRuntime.get();
         runtime.revive().tickExpirations();
+        runtime.prolonged().tickExpirations();
         runtime.ally().tick(forgeTickInputs(runtime));
         runtime.soulAnchor().tick(forgeSoulAnchorInputs(runtime));
         sampleSafePositions(runtime);
@@ -311,6 +370,7 @@ public final class KoEventHandlers {
         runtime.ally().cancelByTarget(player.getUUID());
         runtime.ally().cancelByHelper(player.getUUID());
         runtime.soulAnchor().cancelByTarget(player.getUUID());
+        runtime.prolonged().tickDimensionChanges(player.getUUID(), event.getTo().location());
     }
 
     @SubscribeEvent
@@ -335,6 +395,26 @@ public final class KoEventHandlers {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         FuguKnockoutRuntime.reset();
+    }
+
+    @SubscribeEvent
+    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        Entity entity = event.getEntity();
+        if (entity.level().isClientSide()) {
+            return;
+        }
+        FuguKnockoutRuntime runtime;
+        try {
+            runtime = FuguKnockoutRuntime.get();
+        } catch (IllegalStateException uninitialised) {
+            return;
+        }
+        if (!isBossEntity(entity, runtime.config().prolongedBossTag())) {
+            return;
+        }
+        if (runtime.bossLinks().isLinkedToAnyPlayer(entity.getUUID())) {
+            runtime.prolonged().onBossDespawn(entity.getUUID());
+        }
     }
 
     @SubscribeEvent

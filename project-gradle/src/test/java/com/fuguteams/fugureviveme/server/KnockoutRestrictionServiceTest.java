@@ -10,11 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class KnockoutRestrictionServiceTest {
 
     @Test
-    void isRestrictedOnlyForTemporaryKo() {
+    void isRestrictedForTemporaryAndProlongedAndFullyDowned() {
         KnockoutRestrictionService service = new KnockoutRestrictionService();
         assertTrue(service.isRestricted(ReviveState.TEMPORARY_KO));
-        assertFalse(service.isRestricted(ReviveState.PROLONGED_KO));
-        assertFalse(service.isRestricted(ReviveState.FULLY_DOWNED));
+        assertTrue(service.isRestricted(ReviveState.PROLONGED_KO));
+        assertTrue(service.isRestricted(ReviveState.FULLY_DOWNED));
         assertFalse(service.isRestricted(ReviveState.PENDING_REVIVE));
         assertFalse(service.isRestricted(ReviveState.PENDING_DEATH));
         assertFalse(service.isRestricted(ReviveState.DEAD_PENDING_TRANSFER));
@@ -23,12 +23,15 @@ class KnockoutRestrictionServiceTest {
     }
 
     @Test
-    void overrideSpeedAppliesOnlyInTemporaryKo() {
+    void overrideSpeedAppliesInAllRestrictedStates() {
         KnockoutRestrictionService service = new KnockoutRestrictionService();
         assertEquals(KnockoutRestrictionService.KO_WALK_SPEED,
                 service.overrideSpeed(ReviveState.TEMPORARY_KO).orElseThrow());
+        assertEquals(KnockoutRestrictionService.KO_WALK_SPEED,
+                service.overrideSpeed(ReviveState.PROLONGED_KO).orElseThrow());
+        assertEquals(KnockoutRestrictionService.KO_WALK_SPEED,
+                service.overrideSpeed(ReviveState.FULLY_DOWNED).orElseThrow());
         assertTrue(service.overrideSpeed(ReviveState.ALIVE).isEmpty());
-        assertTrue(service.overrideSpeed(ReviveState.FULLY_DOWNED).isEmpty());
     }
 
     @Test
@@ -39,6 +42,16 @@ class KnockoutRestrictionServiceTest {
         assertFalse(service.allowBlockInteraction(ReviveState.TEMPORARY_KO));
         assertFalse(service.allowInventory(ReviveState.TEMPORARY_KO));
         assertFalse(service.allowTeleport(ReviveState.TEMPORARY_KO));
+        assertFalse(service.allowAttack(ReviveState.PROLONGED_KO));
+        assertFalse(service.allowItemUse(ReviveState.PROLONGED_KO));
+        assertFalse(service.allowBlockInteraction(ReviveState.PROLONGED_KO));
+        assertFalse(service.allowInventory(ReviveState.PROLONGED_KO));
+        assertFalse(service.allowTeleport(ReviveState.PROLONGED_KO));
+        assertFalse(service.allowAttack(ReviveState.FULLY_DOWNED));
+        assertFalse(service.allowItemUse(ReviveState.FULLY_DOWNED));
+        assertFalse(service.allowBlockInteraction(ReviveState.FULLY_DOWNED));
+        assertFalse(service.allowInventory(ReviveState.FULLY_DOWNED));
+        assertFalse(service.allowTeleport(ReviveState.FULLY_DOWNED));
 
         assertTrue(service.allowAttack(ReviveState.ALIVE));
         assertTrue(service.allowItemUse(ReviveState.ALIVE));

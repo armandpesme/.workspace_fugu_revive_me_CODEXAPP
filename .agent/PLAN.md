@@ -13,8 +13,9 @@
 - Fait : Jalon 1 — fondation Forge et configuration, double revue validée.
 - Fait : Jalon 2 — persistance SavedData clairsemée, réseau Forge, snapshots client et tests, double revue validée puis corrections qualité appliquées.
 - Fait : Jalon 3 — interception de la mort, K.O. temporaire, restrictions serveur, relève alliée, Ancre d’Âme et respawn générique, double revue conformité/qualité, puis correctifs qualité appliqués.
-- En cours : préparation Jalon 4 — K.O. prolongé, recherche de boss taggé, respawn position K.O.
-- Reste : Jalons 4 à 7, revues, QA runtime et release `1.0.1`.
+- Fait : Jalon 4 — K.O. prolongé, recherche de boss taggé le plus proche, interdiction relève/ancre en PROLONGED, suivi de la mort et du despawn permanent du boss, résurrection sur position de K.O. y compris après reconnexion, timers continus joueur hors ligne, tests TDD avant code.
+- En cours : Jalon 5 — pendentif de retour et restrictions serveur.
+- Reste : Jalons 5 à 7, QA runtime et release `1.0.1`.
 
 ### Surprises et discovery
 
@@ -30,6 +31,8 @@
 - 2026-06-28 / Jalon 3 : `ServerPlayer#teleportTo(ServerLevel, double, double, double, float, float)` retourne `void`, pas `boolean`.
 - 2026-06-28 / Correctifs qualité Jalon 3 : les tests JUnit purs ne peuvent pas initialiser `Registries.ENTITY_TYPE` (Bootstrap Forge non appelé) ; la valeur exposée par `parseBossTag` est donc un `ResourceLocation` et non un `TagKey`, et la conversion est faite au point d’utilisation dans `findNearestBoss`.
 - 2026-06-28 / Correctifs qualité Jalon 3 : en Java 17, `case X -> {}` (corps vide sur une nouvelle ligne) ne compile pas ; le `case CONTINUE` est conservé en `case CONTINUE -> { break; }` pour garantir la portabilité du `switch` rule.
+- 2026-06-28 / Jalon 4 : `EntityLeaveLevelEvent` est l’event Forge 1.20.1 pour un boss qui quitte le niveau (mort, despawn ou décharge de chunk). Le service `ProlongedKoService.onBossDespawn` est exposé comme hook public et n’est appelé que pour les boss effectivement liés (`bossLinks.isLinkedToAnyPlayer`) afin d’éviter un faux positif sur décharge de chunk. La distinction chunk-unload vs despawn-permanent est une simplification documentée ; le test couvre l’orchestration du service, la détection runtime fine pourra être raffinée au Jalon 7.
+- 2026-06-28 / Jalon 4 : pour permettre les tests JUnit sans instancier un `ServerPlayer` (final), un `ProlongedKoService.ResurrectionApplier` est introduit. La valeur par défaut côté Forge est `ServerPlayerResurrectionApplier` qui résout `ServerLevel` via `MinecraftServerGuard.getServer()` et applique teleport, santé, Mal de résurrection.
 
 ### Decision log
 
@@ -51,6 +54,13 @@
 - 2026-06-28 / Correctifs qualité Jalon 3 : un handler `PlayerLoggedOutEvent` est ajouté dans `KoEventHandlers` pour vider toutes les entrées transitoires (`KnockoutActionRegistry`, `MovementOverrideRegistry`, `LastSafePositionTracker`, `KnockoutDamageTracker`) afin d’éviter les fuites mémoire à la déconnexion. Le nettoyage est implémenté par `clearTransientPlayerState` qui prend les registres individuellement, pour rester testable sans `MinecraftServer`.
 - 2026-06-28 / Correctifs qualité Jalon 3 : un handler `ServerStoppedEvent` est ajouté pour appeler `FuguKnockoutRuntime.reset()`, ce qui garantit qu’un ancien runtime n’est pas retenu après l’arrêt de singleplayer.
 - 2026-06-28 / Correctifs qualité Jalon 3 : suppression du code mort `KoPlayerProbe`, de `KnockoutActionRegistry.findActiveForHelper` (jamais appelé en production) et des imports inutilisés dans `KoEventHandlers`, `KnockoutDamageTracker`, `AllyReviveLogic`, `SoulAnchorLogic`, `KnockoutRestrictionService`, `AllyReviveService`.
+- 2026-06-28 / Jalon 4 : interpréter « Sans boss, démarrer un K.O. temporaire neuf de 60 secondes » comme `TEMPORARY_KO` (choix A) avec `TEMPORARY_KO_DURATION_TICKS` (1200 = 60 s) plutôt que `PROLONGED_KO` raccourci (choix B). L’uniformité avec la mécanique existante est préférée, et le `K.O. temporaire neuf » est plus lisible côté client (overlay, jauge trois coups).
+- 2026-06-28 / Jalon 4 : exposer la liste boss→joueurs via `BossLinkRegistry` in-memory séparé du `KnockoutSavedData.playersByBoss`, afin d’éviter qu’une écriture disque différée (chunk unload) fasse fuiter la liste de boss. Le registre est reconstruit à l’entrée en `PROLONGED_KO` (`linkBossToPlayer`) et nettoyé sur transition durable (mort boss, despawn, timeout, changement de dimension, résurrection).
+- 2026-06-28 / Jalon 4 : la transition `PROLONGED → PENDING_REVIVE` est faite avec une deadline courte (`now + 1`) afin de signaler « respawn imminent » sans introduire un nouvel état. Le respawn effectif est piloté par `PlayerEvent.PlayerRespawnEvent` qui appelle `ProlongedKoService.resurrectOnKoPosition`.
+- 2026-06-28 / Jalon 4 : la `KnockoutRestrictionService` est étendue à `PROLONGED_KO` et `FULLY_DOWNED` pour l’input (attaque, item, bloc, inventaire, téléport), conformément au plan. Le service de chat et la caméra restent toujours autorisés.
+- 2026-06-28 / Jalon 4 : `AllyReviveLogic` et `SoulAnchorLogic` reçoivent un nouveau `StartDenial.TARGET_IN_PROLONGED_KO` pour rejeter explicitement la relève alliée et l’Ancre d’Âme pendant le K.O. prolongé, conformément à l’exigence « Interdire relève alliée et Ancre d’Âme ». `TARGET_NOT_IN_TEMPORARY_KO` reste utilisé pour les autres états non éligibles.
+- 2026-06-28 / Jalon 4 : `BossLinkRegistry.unlinkBossByPlayer(UUID)` est ajouté pour permettre un nettoyage explicite par joueur (utilisé par `unlinkPlayer` quand le record n’existe plus) ; le reste du code passe par `unlink` ciblé ou `unlinkBoss` global.
+- 2026-06-28 / Jalon 4 : `unlinkPlayer` n’est PAS appelé sur `PlayerLoggedOutEvent` afin de préserver la capacité de traiter une mort de boss pendant que le joueur est hors ligne (la transition `PENDING_REVIVE` est persistée disque et appliquée à la reconnexion via `PlayerRespawnEvent`).
 
 ### Outcome et retrospective
 
@@ -64,13 +74,16 @@
 - Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 133 tests, 0 échec, 0 erreur. +12 tests (4 pour `parseBossTag`, 2 pour `RuntimeConfig`, 3 pour `clearTransientPlayerState`, 3 nouveaux pour `MovementOverrideRegistry.forget` dont le retour `OptionalDouble` et 1 pour `KnockoutDamageTracker.clear(UUID)`), -1 test renommé (`multipleHelpersTargetSamePlayer` → `singleHelperFindsActionByHelperUuid`).
 - Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
 - Correctifs qualité Jalon 3 (commit `fix(jalon-3)`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (131 765 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (51 165 bytes).
-- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité validée; qualité validée après corrections sur la restauration de vitesse, la lecture de la config boss, la fuite mémoire à la déconnexion et le reset du runtime à l’arrêt.
-- Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release.
-- Vérification non exécutée : `runServer` / `runClient`, car Jalon 3 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
+- Jalon 4 (commit `feat(jalon-4)`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 12s`, 197 tests, 0 échec, 0 erreur. +64 tests (ProlongedKoLogicTest 20, BossLinkRegistryTest 18, ProlongedKoServiceTest 23, complétion des restrictions dans KnockoutRestrictionServiceTest, AllyReviveLogicTest, AllyReviveServiceTest, SoulAnchorLogicTest, SoulAnchorServiceTest).
+- Jalon 4 (commit `feat(jalon-4)`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 20s`.
+- Jalon 4 (commit `feat(jalon-4)`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (149 811 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (56 824 bytes).
+- Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité validée; qualité validée après corrections sur la restauration de vitesse, la lecture de la config boss, la fuite mémoire à la déconnexion et le reset du runtime à l’arrêt; Jalon 4 conformité auto-validée par les tests (mécanique des transitions pures, registre boss, orchestration service, wire-up handlers), revues séparées conformité/qualité à planifier par l’agent suivant.
+- Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release. La détection chunk-unload vs despawn-permanent est volontairement simplifiée dans le wire-up (hook `onBossDespawn` appelé seulement si le boss est lié à un joueur) ; un affinage (par exemple via `MobSpawnEvent.AllowDespawn` ou un suivi `EntityJoinLevelEvent` / `EntityLeaveLevelEvent` chronométré) sera étudié au Jalon 7.
+- Vérification non exécutée : `runServer` / `runClient`, car Jalon 4 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
 
 ### Reprise agent sans état
 
-Travailler uniquement dans le worktree `codex/fugu-revive-me-v1`. Prochaine action : réindexer GitNexus après commit Jalon 3, déléguer le Jalon 4 (K.O. prolongé : recherche de boss taggé le plus proche, interdire relève alliée et ancre pendant le prolongé, suivi de la mort du boss, gestion despawn/reset permanent, timeout/changement de dimension/Libérer l’Esprit) à un agent gameplay.
+Branche courante : `codex/jalon-4` basée sur `codex/jalon-3` (`937bc27`). Prochaine action : déléguer le Jalon 5 (pendentif de retour : item non empilable avec cooldown stocké sur l’ItemStack, canalisation 30 s, restrictions strictes, téléport depuis dimension principale uniquement, repli vanilla) à un agent gameplay, après une revue conformité/qualité distincte du Jalon 4.
 
 ## 1. Résumé
 

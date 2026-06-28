@@ -43,13 +43,37 @@ class AllyReviveLogicTest {
     @Test
     void startDeniedWhenTargetNotInTemporaryKo() {
         KnockoutPlayerSnapshot helper = snapshot(UUID.randomUUID(), ReviveState.ALIVE, BlockPos.ZERO, 0);
-        KnockoutPlayerSnapshot target = snapshot(UUID.randomUUID(), ReviveState.PROLONGED_KO, BlockPos.ZERO, 0);
+        KnockoutPlayerSnapshot target = snapshot(UUID.randomUUID(), ReviveState.PENDING_DEATH, BlockPos.ZERO, 0);
 
         AllyReviveLogic.StartOutcome outcome = AllyReviveLogic.evaluateStart(
                 helper, target, false, 0L, 100, 3.0);
 
         AllyReviveLogic.StartDenied denied = assertInstanceOf(AllyReviveLogic.StartDenied.class, outcome);
         assertEquals(AllyReviveLogic.StartDenial.TARGET_NOT_IN_TEMPORARY_KO, denied.reason());
+    }
+
+    @Test
+    void startDeniedWhenTargetInProlongedKo() {
+        KnockoutPlayerSnapshot helper = snapshot(UUID.randomUUID(), ReviveState.ALIVE, BlockPos.ZERO, 0);
+        KnockoutPlayerSnapshot target = snapshot(UUID.randomUUID(), ReviveState.PROLONGED_KO, BlockPos.ZERO, 0);
+
+        AllyReviveLogic.StartOutcome outcome = AllyReviveLogic.evaluateStart(
+                helper, target, false, 0L, 100, 3.0);
+
+        AllyReviveLogic.StartDenied denied = assertInstanceOf(AllyReviveLogic.StartDenied.class, outcome);
+        assertEquals(AllyReviveLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
+    }
+
+    @Test
+    void startDeniedWhenTargetFullyDowned() {
+        KnockoutPlayerSnapshot helper = snapshot(UUID.randomUUID(), ReviveState.ALIVE, BlockPos.ZERO, 0);
+        KnockoutPlayerSnapshot target = snapshot(UUID.randomUUID(), ReviveState.FULLY_DOWNED, BlockPos.ZERO, 0);
+
+        AllyReviveLogic.StartOutcome outcome = AllyReviveLogic.evaluateStart(
+                helper, target, false, 0L, 100, 3.0);
+
+        AllyReviveLogic.StartDenied denied = assertInstanceOf(AllyReviveLogic.StartDenied.class, outcome);
+        assertEquals(AllyReviveLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
     }
 
     @Test

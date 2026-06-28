@@ -70,6 +70,27 @@ class SoulAnchorServiceTest {
     }
 
     @Test
+    void tryStartRejectsWhenTargetInProlongedKo() {
+        KnockoutActionRegistry registry = new KnockoutActionRegistry();
+        KnockoutSavedData data = new KnockoutSavedData();
+        ReviveService revive = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(new RecordingSink()));
+        SoulAnchorService service = new SoulAnchorService(
+                registry, revive, new KnockoutDamageTracker(), () -> 0L, CONFIG);
+
+        UUID target = UUID.randomUUID();
+        KnockoutPlayerSnapshot snap = new KnockoutPlayerSnapshot(
+                target, ReviveState.PROLONGED_KO, BlockPos.ZERO,
+                ResourceLocation.parse("minecraft:overworld"),
+                0, true, 1F, 20F);
+
+        SoulAnchorLogic.StartOutcome outcome = service.tryStart(snap, 0);
+
+        SoulAnchorLogic.StartDenied denied = assertInstanceOf(SoulAnchorLogic.StartDenied.class, outcome);
+        assertEquals(SoulAnchorLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
+    }
+
+    @Test
     void tickCompletesConsumesAnchorAndRestoresHealth() {
         KnockoutActionRegistry registry = new KnockoutActionRegistry();
         KnockoutSavedData data = new KnockoutSavedData();

@@ -19,6 +19,7 @@ public final class SoulAnchorLogic {
 
     public enum StartDenial {
         TARGET_NOT_IN_TEMPORARY_KO,
+        TARGET_IN_PROLONGED_KO,
         ALREADY_ACTIVE,
         ANCHOR_NOT_IN_HOTBAR,
         PLAYER_TAKEN_DAMAGE_RECENTLY
@@ -48,6 +49,9 @@ public final class SoulAnchorLogic {
             int durationTicks
     ) {
         Objects.requireNonNull(target, "target");
+        if (target.state() == ReviveState.PROLONGED_KO || target.state() == ReviveState.FULLY_DOWNED) {
+            return new StartDenied(StartDenial.TARGET_IN_PROLONGED_KO);
+        }
         if (target.state() != ReviveState.TEMPORARY_KO) {
             return new StartDenied(StartDenial.TARGET_NOT_IN_TEMPORARY_KO);
         }

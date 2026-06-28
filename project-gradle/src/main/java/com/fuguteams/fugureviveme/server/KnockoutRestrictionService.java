@@ -18,12 +18,17 @@ public final class KnockoutRestrictionService {
     public static final float KO_WALK_SPEED = 0.05F;
 
     /**
-     * The set of states during which player input is restricted. The set
-     * is intentionally narrow: only {@link ReviveState#TEMPORARY_KO} is
-     * restricted. The prolonged KO flow is part of milestone 4 and keeps
-     * its own dedicated restrictions there.
+     * The set of states during which player input is restricted. The
+     * temporary KO and the prolonged KO share the same inventory and
+     * attack restrictions, but ally revive and soul anchor are
+     * explicitly forbidden during prolonged KO (see
+     * {@link AllyReviveService#tryStart} and
+     * {@link SoulAnchorService#tryStart}).
      */
-    public static final Set<ReviveState> RESTRICTED_STATES = Set.of(ReviveState.TEMPORARY_KO);
+    public static final Set<ReviveState> RESTRICTED_STATES = Set.of(
+            ReviveState.TEMPORARY_KO,
+            ReviveState.PROLONGED_KO,
+            ReviveState.FULLY_DOWNED);
 
     public KnockoutRestrictionService() {
     }

@@ -63,12 +63,33 @@ class AllyReviveServiceTest {
         UUID helper = UUID.randomUUID();
         UUID target = UUID.randomUUID();
         KnockoutPlayerSnapshot helperSnap = snapshot(helper, ReviveState.ALIVE, new BlockPos(0, 64, 0), 0);
-        KnockoutPlayerSnapshot targetSnap = snapshot(target, ReviveState.PROLONGED_KO, new BlockPos(2, 64, 0), 0);
+        KnockoutPlayerSnapshot targetSnap = snapshot(target, ReviveState.PENDING_DEATH, new BlockPos(2, 64, 0), 0);
 
         AllyReviveLogic.StartOutcome outcome = service.tryStart(helperSnap, targetSnap);
 
         AllyReviveLogic.StartDenied denied = assertInstanceOf(AllyReviveLogic.StartDenied.class, outcome);
         assertEquals(AllyReviveLogic.StartDenial.TARGET_NOT_IN_TEMPORARY_KO, denied.reason());
+    }
+
+    @Test
+    void tryStartRejectsWhenTargetInProlongedKo() {
+        KnockoutActionRegistry registry = new KnockoutActionRegistry();
+        KnockoutSavedData data = new KnockoutSavedData();
+        RecordingSink sink = new RecordingSink();
+        ReviveService revive = new ReviveService(
+                () -> data, () -> 0L, new ReviveSyncService(sink));
+        AllyReviveService service = new AllyReviveService(
+                registry, revive, new KnockoutDamageTracker(), () -> 0L, CONFIG);
+
+        UUID helper = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        KnockoutPlayerSnapshot helperSnap = snapshot(helper, ReviveState.ALIVE, new BlockPos(0, 64, 0), 0);
+        KnockoutPlayerSnapshot targetSnap = snapshot(target, ReviveState.PROLONGED_KO, new BlockPos(2, 64, 0), 0);
+
+        AllyReviveLogic.StartOutcome outcome = service.tryStart(helperSnap, targetSnap);
+
+        AllyReviveLogic.StartDenied denied = assertInstanceOf(AllyReviveLogic.StartDenied.class, outcome);
+        assertEquals(AllyReviveLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
     }
 
     @Test

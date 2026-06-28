@@ -21,6 +21,7 @@ public final class AllyReviveLogic {
 
     public enum StartDenial {
         TARGET_NOT_IN_TEMPORARY_KO,
+        TARGET_IN_PROLONGED_KO,
         ALREADY_ACTIVE,
         HELPER_DISTANCE_OUT_OF_RANGE,
         HELPER_SAME_AS_TARGET
@@ -53,6 +54,9 @@ public final class AllyReviveLogic {
         Objects.requireNonNull(target, "target");
         if (helper.playerUuid().equals(target.playerUuid())) {
             return new StartDenied(StartDenial.HELPER_SAME_AS_TARGET);
+        }
+        if (target.state() == ReviveState.PROLONGED_KO || target.state() == ReviveState.FULLY_DOWNED) {
+            return new StartDenied(StartDenial.TARGET_IN_PROLONGED_KO);
         }
         if (target.state() != ReviveState.TEMPORARY_KO) {
             return new StartDenied(StartDenial.TARGET_NOT_IN_TEMPORARY_KO);

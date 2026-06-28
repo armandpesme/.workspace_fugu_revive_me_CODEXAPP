@@ -41,13 +41,35 @@ class SoulAnchorLogicTest {
 
     @Test
     void startDeniedWhenNotInTemporaryKo() {
-        KnockoutPlayerSnapshot snap = snapshot(UUID.randomUUID(), ReviveState.PROLONGED_KO, BlockPos.ZERO, 0, true);
+        KnockoutPlayerSnapshot snap = snapshot(UUID.randomUUID(), ReviveState.PENDING_DEATH, BlockPos.ZERO, 0, true);
 
         SoulAnchorLogic.StartOutcome outcome = SoulAnchorLogic.evaluateStart(
                 snap, 0, false, false, 0L, 100);
 
         SoulAnchorLogic.StartDenied denied = assertInstanceOf(SoulAnchorLogic.StartDenied.class, outcome);
         assertEquals(SoulAnchorLogic.StartDenial.TARGET_NOT_IN_TEMPORARY_KO, denied.reason());
+    }
+
+    @Test
+    void startDeniedWhenInProlongedKo() {
+        KnockoutPlayerSnapshot snap = snapshot(UUID.randomUUID(), ReviveState.PROLONGED_KO, BlockPos.ZERO, 0, true);
+
+        SoulAnchorLogic.StartOutcome outcome = SoulAnchorLogic.evaluateStart(
+                snap, 0, false, false, 0L, 100);
+
+        SoulAnchorLogic.StartDenied denied = assertInstanceOf(SoulAnchorLogic.StartDenied.class, outcome);
+        assertEquals(SoulAnchorLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
+    }
+
+    @Test
+    void startDeniedWhenFullyDowned() {
+        KnockoutPlayerSnapshot snap = snapshot(UUID.randomUUID(), ReviveState.FULLY_DOWNED, BlockPos.ZERO, 0, true);
+
+        SoulAnchorLogic.StartOutcome outcome = SoulAnchorLogic.evaluateStart(
+                snap, 0, false, false, 0L, 100);
+
+        SoulAnchorLogic.StartDenied denied = assertInstanceOf(SoulAnchorLogic.StartDenied.class, outcome);
+        assertEquals(SoulAnchorLogic.StartDenial.TARGET_IN_PROLONGED_KO, denied.reason());
     }
 
     @Test

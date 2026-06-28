@@ -9,11 +9,13 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 public final class ModEffects {
+    public static final String RESURRECTION_SICKNESS_NAME = "resurrection_sickness";
+
     private static final DeferredRegister<MobEffect> EFFECTS =
             DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, FuguReviveMe.MOD_ID);
 
     public static final RegistryObject<MobEffect> RESURRECTION_SICKNESS =
-            EFFECTS.register("resurrection_sickness", ResurrectionSicknessEffect::new);
+            EFFECTS.register(RESURRECTION_SICKNESS_NAME, ResurrectionSicknessEffect::new);
 
     private ModEffects() {
     }

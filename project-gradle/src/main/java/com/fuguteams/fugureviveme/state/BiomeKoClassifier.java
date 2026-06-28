@@ -10,7 +10,10 @@ public final class BiomeKoClassifier {
     private final Set<String> temporaryBiomes;
     private final Set<String> prolongedBiomes;
 
-    public BiomeKoClassifier(Collection<String> temporaryBiomes, Collection<String> prolongedBiomes) {
+    public BiomeKoClassifier(
+            Collection<? extends String> temporaryBiomes,
+            Collection<? extends String> prolongedBiomes
+    ) {
         this.temporaryBiomes = copyAndValidate(temporaryBiomes);
         this.prolongedBiomes = copyAndValidate(prolongedBiomes);
     }
@@ -31,7 +34,7 @@ public final class BiomeKoClassifier {
         return new Result(KoType.NONE, false);
     }
 
-    private static Set<String> copyAndValidate(Collection<String> biomeIds) {
+    private static Set<String> copyAndValidate(Collection<? extends String> biomeIds) {
         if (biomeIds == null) {
             throw new IllegalArgumentException("Biome collection cannot be null");
         }

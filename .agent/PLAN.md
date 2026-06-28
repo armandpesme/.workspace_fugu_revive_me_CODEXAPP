@@ -16,8 +16,10 @@
 - Fait : Jalon 4 — K.O. prolongé, recherche de boss taggé le plus proche, interdiction relève/ancre en PROLONGED, suivi de la mort et du despawn permanent du boss, résurrection sur position de K.O. y compris après reconnexion, timers continus joueur hors ligne, tests TDD avant code.
 - Fait : Correctifs qualité Jalon 4 — résurrection après reconnexion (handler `PlayerLoggedInEvent`), suppression du double appel `tickExpirations` (Option A), suppression du code mort `extendOnFullyDowned`, extension de `transitionOnBossDespawn` à `FULLY_DOWNED`, ajout de `LOGGER` dans `ProlongedKoService`/`BossLinkRegistry`, conversion de `BossLinkRegistry` en structures concurrentes.
 - Fait : Jalon 5 — pendentif de retour avec canalisation stricte 30 s, cooldown par stack NBT, annulation sans cooldown (mouvement > 0.1 bloc, dégât, changement slot/item, mort, dimension, déconnexion), téléport depuis dimension principale uniquement avec repli vanilla, tests TDD avant code.
-- En cours : Jalon 6 — interfaces, VFX et assets.
-- Reste : Jalons 6 à 7, QA runtime et release `1.0.1`.
+- Fait : merge de `codex/jalon-5` dans `master` puis validation post-merge par `.\gradlew.bat build` sur `master`.
+- Fait : correction du skill local `doubt-qcm-pause` pour viser le QCM natif ADE (`request_user_input` dans Codex App quand disponible) et non un outil générique `question`; miroirs `.codex` et `.opencode` synchronisés.
+- Fait : Jalon 6 — overlay K.O. temporaire, écran K.O. prolongé non pausant, VFX client, textures/modèles/langues des items, tag boss vide extensible, tests assets/UI et correctifs qualité appliqués.
+- Reste : Jalon 7, QA runtime et release `1.0.1`.
 
 ### Surprises et discovery
 
@@ -35,6 +37,9 @@
 - 2026-06-28 / Correctifs qualité Jalon 3 : en Java 17, `case X -> {}` (corps vide sur une nouvelle ligne) ne compile pas ; le `case CONTINUE` est conservé en `case CONTINUE -> { break; }` pour garantir la portabilité du `switch` rule.
 - 2026-06-28 / Jalon 4 : `EntityLeaveLevelEvent` est l’event Forge 1.20.1 pour un boss qui quitte le niveau (mort, despawn ou décharge de chunk). Le service `ProlongedKoService.onBossDespawn` est exposé comme hook public et n’est appelé que pour les boss effectivement liés (`bossLinks.isLinkedToAnyPlayer`) afin d’éviter un faux positif sur décharge de chunk. La distinction chunk-unload vs despawn-permanent est une simplification documentée ; le test couvre l’orchestration du service, la détection runtime fine pourra être raffinée au Jalon 7.
 - 2026-06-28 / Jalon 4 : pour permettre les tests JUnit sans instancier un `ServerPlayer` (final), un `ProlongedKoService.ResurrectionApplier` est introduit. La valeur par défaut côté Forge est `ServerPlayerResurrectionApplier` qui résout `ServerLevel` via `MinecraftServerGuard.getServer()` et applique teleport, santé, Mal de résurrection.
+- 2026-06-28 / Reprise Jalon 6 : l'analyse rapide `rg` + GitNexus + subagents confirme que le jalon 6 n'a pas encore de surface d'implémentation réelle dans `project-gradle/` : pas d'overlay `GuiGraphics`, pas d'écran renderer, pas de particules/sons branchés, pas de modèles ou textures d'items. Le client existant stocke surtout les snapshots réseau.
+- 2026-06-28 / Skill QCM : le skill `doubt-qcm-pause` pointait vers un outil générique `question`, alors que Codex App expose `request_user_input` seulement dans certains modes/outils disponibles. Le skill est corrigé pour utiliser le QCM natif quand l'ADE l'expose et signaler explicitement l'indisponibilité avant tout fallback texte.
+- 2026-06-28 / Jalon 6 : la durée des jauges client ne doit pas hardcoder `1200` ou `6000` ticks. Le client conserve la durée observée depuis le premier snapshot reçu pour l'état/action courant et interpole ensuite localement.
 
 ### Decision log
 
@@ -72,6 +77,10 @@
 - 2026-06-28 / Jalon 5 : le pendentif de retour suit le pattern Logic/Service/Handlers existant. `ReturnPendantLogic` expose des fonctions pures (`evaluateStart`, `evaluateTick`) avec sealed interfaces pour les verdicts. `ReturnPendantService` orchestre les casts actifs in-memory (`ConcurrentHashMap<UUID, ReturnPendantCast>`) et expose des callbacks pour le cooldown et le téléport. Le cooldown est stocké sur le tag NBT `CooldownEnd` de l'`ItemStack`, donc indépendant par stack. La téléportation utilise `player.getRespawnPosition()` avec repli vers `server.overworld().getSharedSpawnPos()`. Le `KoEventHandlers` branche les events Forge (RightClickItem, LivingHurt, RightClickBlock, LeftClickBlock, PlayerChangedDimension, PlayerLoggedOut, LivingDeath, ServerTick) pour l'activation, l'annulation et le tick des casts.
 - 2026-06-28 / Jalon 5 : `ReturnPendantLogic.StartRejection.ALREADY_CASTING` est ajouté pour rejeter explicitement un deuxième cast simultané par le même joueur, en cohérence avec le pattern `ALREADY_ACTIVE` de `SoulAnchorLogic`. Le `ReturnPendantLogic.TickOutcome.NOT_CASTING` est ajouté pour distinguer l'absence de cast d'un verdict normal.
 - 2026-06-28 / Jalon 5 : le `RuntimeConfig` est étendu avec 4 nouveaux champs (`returnPendantMainDimension`, `returnPendantCastTimeTicks`, `returnPendantCooldownTicks`, `returnPendantMovementTolerance`) et la méthode `returnPendantConfig()` qui construit le `ReturnPendantService.ReturnPendantConfig`. Le `FuguKnockoutRuntimeConfigTest` est mis à jour pour inclure les nouveaux paramètres.
+- 2026-06-28 / Reprise Jalon 6 : après validation humaine QCM, créer `codex/jalon-6` depuis `master` avant toute implémentation, afin d'éviter de travailler directement sur `master` avec des changements UI/VFX/assets multi-fichiers.
+- 2026-06-28 / Jalon 6 UI boss : choix humain A validé. L'écran prolongé affiche seulement `Boss lié` / `Statut en attente` tant qu'aucun signal serveur fiable de victoire boss n'est branché; ne pas renommer le packet ni afficher `Boss vaincu` dans ce jalon sans nouvelle validation.
+- 2026-06-28 / Skill QCM : `doubt-qcm-pause` doit appeler `request_user_input` dans Codex App quand l'outil est disponible (1 question, 2-3 options, header <= 12 caractères). Si l'outil natif est absent, l'agent doit le dire et ne présenter un QCM texte que comme dégradé explicite.
+- 2026-06-28 / Jalon 6 : les autres clients reçoivent désormais un visual `ALIVE` quand un joueur sort du K.O.; le store client supprime alors l'entrée tracking locale pour éviter une posture/particules fantômes.
 
 ### Outcome et retrospective
 
@@ -94,13 +103,18 @@
 - Jalon 5 (commit `feat(jalon-5)`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 12s`, 248 tests, 0 échec, 0 erreur. +42 tests (ReturnPendantLogicTest 13, ReturnPendantServiceTest 16, ReturnPendantCastTest 5, ReturnPendantConfigTest 8).
 - Jalon 5 (commit `feat(jalon-5)`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
 - Jalon 5 (commit `feat(jalon-5)`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (167 679 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (61 257 bytes).
+- Post-merge Jalon 5 sur `master` : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`, 10 tâches dont 4 exécutées. Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (167 680 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (61 478 bytes).
+- Smoke runtime post-merge : `.\gradlew.bat runClient` exécuté depuis `project-gradle/` le 2026-06-28. Le client Forge 47.4.20 a démarré, chargé le mod `fugu_revive_me`, généré/chargé un monde intégré `New World` et atteint le handshake local. La commande a été interrompue manuellement par `Ctrl+C`, donc le code retour `1` vient de l'arrêt volontaire et non d'un crash observé.
+- Jalon 6 (branche `codex/jalon-6`) : `.\gradlew.bat test` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 10s`, 255 tests, 0 échec, 0 erreur. Ajouts principaux : `ClientUiFormatTest`, `ClientReviveStateStoreTest` étendu, `ItemAssetIntegrityTest` pour modèles/textures/langues/tag boss.
+- Jalon 6 (branche `codex/jalon-6`) : `.\gradlew.bat build` exécuté depuis `project-gradle/` le 2026-06-28, `BUILD SUCCESSFUL in 8s`.
+- Jalon 6 (branche `codex/jalon-6`) : Artefacts produits : `project-gradle/build/libs/fugu_revive_me-1.0.1.jar` (185 192 bytes) et `project-gradle/build/libs/fugu_revive_me-1.0.1-sources.jar` (70 819 bytes).
 - Revues : Jalon 1 conformité/qualité validées; Jalon 2 conformité validée; qualité validée après corrections sur frontière client/common et visuals tracking; Jalon 3 conformité validée; qualité validée après corrections sur la restauration de vitesse, la lecture de la config boss, la fuite mémoire à la déconnexion et le reset du runtime à l’arrêt; Jalon 4 conformité PARTIELLEMENT CONFORME (1 critique + 1 majeure) et qualité BON (1 majeur + 1 mineur) après corrections sur le handler de reconnexion, la suppression du double `tickExpirations`, l'extension de `transitionOnBossDespawn` à `FULLY_DOWNED`, la suppression du code mort et l'ajout de loggers/structures concurrentes.
 - Risque restant : le `KoEventHandlers` n’a pas encore été couvert par un test d’intégration runtime (runClient/runServer) — à planifier avant la release. La détection chunk-unload vs despawn-permanent est volontairement simplifiée dans le wire-up (hook `onBossDespawn` appelé seulement si le boss est lié à un joueur) ; un affinage (par exemple via `MobSpawnEvent.AllowDespawn` ou un suivi `EntityJoinLevelEvent` / `EntityLeaveLevelEvent` chronométré) sera étudié au Jalon 7. Suite aux correctifs qualité Jalon 4, le wire-up de `onServerTick` ne nettoie plus le `BossLinkRegistry` sur timeout de KO (seul `ReviveService.tickExpirations` est appelé, qui ne touche pas le registre). Cela laisse un lien orphelin pour chaque joueur en `PROLONGED_KO`/`FULLY_DOWNED` qui expire par timeout. Le lien est ensuite ignoré par `onBossDeath`/`onBossDespawn` grâce au filtrage par état (`transitionOnBossDeath`/`transitionOnBossDespawn` ignorent les états non-`PROLONGED_KO`/`FULLY_DOWNED`) ; un nettoyage dédié pourra être ajouté au Jalon 7 si la fuite devient visible.
 - Vérification non exécutée : `runServer` / `runClient`, car Jalon 4 reste infrastructure serveur et ces tâches nécessitent un smoke runtime long ou interactif; à planifier avant validation gameplay finale.
 
 ### Reprise agent sans état
 
-Branche courante : `codex/jalon-5` basée sur `codex/jalon-4` (`f73476a`). Prochaine action : déléguer le Jalon 6 (interfaces, VFX et assets) à un agent stitch-designer puis gameplay-engineer et asset-manager, après une revue conformité/qualité distincte du Jalon 5.
+Branche courante : `codex/jalon-6`, créée depuis `master` validé post-merge. Modifications locales préexistantes hors scope : `AGENTS.md` et `CLAUDE.md`. Jalon 6 compilé et buildé; prochaine action : ouvrir Jalon 7 (commandes, creative tab, version/release, QA runtime) après revue finale ou merge de la branche.
 
 ## 1. Résumé
 
@@ -263,14 +277,11 @@ Responsables : `stitch-designer`, puis `gameplay-engineer` et `asset-manager`.
 
 ### Jalon 7 — Commandes et QA finale
 
-- Ajouter les commandes permission niveau 2 :
-  - `/fugurevive set_ko temporary|prolonged <player>`
-  - `/fugurevive clear_state <player>`
-  - `/fugurevive release_spirit <player>`
-  - `/fugurevive give_soul_anchor <player>`
-  - `/fugurevive give_return_pendant <player>`
-  - `/fugurevive debug_state <player>`
-- Passer la version finale à `1.0.1`.
+- Ajouter les commandes permission niveau 4/OP :
+  - `/fugurevive test kotemporaire <cible/player>
+  - `/fugurevive test kopermanant <cible/player>
+- Ajoute creatif tab, avec les items que ajoute le mods.
+- Passer la version finale à `+1.0.1`.
 - Vérifier qu’aucun Mixin n’est présent. Si un Mixin devient indispensable, arrêter et demander validation avant ajout.
 - Produire `fugu_revive_me-1.0.1.jar` et `fugu_revive_me-1.0.1-sources.jar`.
 
@@ -325,3 +336,10 @@ Puis :
 - `.\gradlew.bat clean build`.
 
 La livraison est acceptée uniquement si aucun item n’est perdu, aucune règle vanilla de drops/XP n’est remplacée, aucun packet n’est envoyé par tick, le client dédié démarre sans classe client chargée côté serveur et tous les scénarios multijoueur passent.
+
+
+======================
+HORS SCOPE V1:
+Reflection, idée pour v2
+-ko temporaire par defaut a la mort sur biomes dans la config server. (allier ou pas)
+- couton liberais l'esprit des ko temporaires (allier ou pas)

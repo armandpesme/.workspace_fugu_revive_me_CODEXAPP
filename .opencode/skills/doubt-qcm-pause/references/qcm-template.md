@@ -5,7 +5,7 @@
 ```
 question: "<Contexte en 1 phrase, factuel, sans jugement.>
 
-<Question claire, fermée, binaire ou à 2-4 options ?>"
+<Question claire, fermée, binaire ou à choix fermé ?>"
 
 header: "<Catégorie courte, max 30 chars>"
 
@@ -21,7 +21,8 @@ options:
 ```
 
 L'option "Autre / réponse personnalisée" est **ajoutée automatiquement** par
-l'outil `question` ; ne pas l'inclure manuellement.
+le système QCM natif de l'ADE quand il le supporte ; ne pas l'inclure
+manuellement.
 
 ## Exemples concrets
 
@@ -109,10 +110,10 @@ options:
 
 | Champ | Contrainte | Source |
 |---|---|---|
-| `header` | max 30 caractères | contrainte outil `question` |
-| `label` (option) | 1-5 mots | contrainte outil `question` |
+| `header` | max 12 caractères dans Codex App, max 30 caractères ailleurs si autorisé | contrainte outil QCM natif |
+| `label` (option) | 1-5 mots | contrainte outil QCM natif |
 | `description` (option) | 1 phrase, 1 ligne idéalement | bonne pratique |
-| Nombre d'options | 2 à 4 (+ "Autre" auto) | contrainte outil `question` |
+| Nombre d'options | 2 à 3 dans Codex App, 2 à 4 ailleurs si autorisé (+ "Autre" auto) | contrainte outil QCM natif |
 | Question | 1 phrase interrogative | bonne pratique |
 | Contexte | 1 phrase factuelle avant la question | bonne pratique |
 
@@ -120,8 +121,8 @@ options:
 
 Si **plusieurs doutes indépendants** existent dans la même situation :
 
-- ❌ Mauvais : un seul `question` avec 5 sous-questions.
-- ✅ Bon : 2 ou 3 appels `question` **séparés**, avec un entête "Question
+- ❌ Mauvais : un seul QCM natif avec 5 sous-questions.
+- ✅ Bon : 2 ou 3 appels QCM natifs **séparés**, avec un entête "Question
   1/X", "Question 2/X".
 
 L'utilisateur peut ainsi répondre à son rythme et ne pas perdre le fil.
@@ -129,7 +130,8 @@ L'utilisateur peut ainsi répondre à son rythme et ne pas perdre le fil.
 ## Suffixe `(Recommandé)`
 
 - Toujours suffixer `(Recommandé)` sur la première option.
-- L'outil `question` peut ajouter automatiquement ce suffixe si
-  `recommended: true` est présent sur l'option ; sinon, l'ajouter
-  textuellement au label.
-- Une seule option porte le suffixe `(Recommandé)`.
+- Codex App attend le suffixe `(Recommended)` sur le label recommandé dans
+  l'appel `request_user_input`.
+- En fallback texte francophone, utiliser `(Recommandé)`.
+- Une seule option porte le suffixe recommandé adapté à l'ADE : `(Recommended)`
+  pour Codex App, `(Recommandé)` pour un fallback texte francophone.

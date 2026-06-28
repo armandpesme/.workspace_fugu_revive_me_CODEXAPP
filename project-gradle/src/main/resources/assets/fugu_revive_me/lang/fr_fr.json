@@ -1,5 +1,21 @@
 {
   "effect.fugu_revive_me.resurrection_sickness": "Mal de résurrection",
   "item.fugu_revive_me.return_pendant": "Pendentif de retour",
-  "item.fugu_revive_me.soul_anchor": "Ancre d'âme"
+  "item.fugu_revive_me.soul_anchor": "Ancre d'âme",
+  "overlay.fugu_revive_me.ally_revive": "Relève en cours",
+  "overlay.fugu_revive_me.hits": "Coups subis",
+  "overlay.fugu_revive_me.soul_anchor.available": "Ancre: disponible",
+  "overlay.fugu_revive_me.soul_anchor.casting": "Ancre: canalisation",
+  "overlay.fugu_revive_me.soul_anchor.missing": "Ancre: absente",
+  "screen.fugu_revive_me.prolonged_ko.ally_unavailable": "Relève alliée: indisponible",
+  "screen.fugu_revive_me.prolonged_ko.anchor_unavailable": "Ancre d'Âme: indisponible",
+  "screen.fugu_revive_me.prolonged_ko.boss_linked": "Boss lié - statut en attente",
+  "screen.fugu_revive_me.prolonged_ko.boss_not_linked": "Boss non lié",
+  "screen.fugu_revive_me.prolonged_ko.hits": "Coups subis: %s/3",
+  "screen.fugu_revive_me.prolonged_ko.issue": "Issue: vaincre le boss ou libérer l'esprit",
+  "screen.fugu_revive_me.prolonged_ko.release": "Libérer l'Esprit",
+  "screen.fugu_revive_me.prolonged_ko.sent": "Demande envoyée...",
+  "screen.fugu_revive_me.prolonged_ko.state_fully_downed": "À terre complet",
+  "screen.fugu_revive_me.prolonged_ko.state_prolonged": "K.O. prolongé",
+  "screen.fugu_revive_me.prolonged_ko.title": "K.O. prolongé"
 }

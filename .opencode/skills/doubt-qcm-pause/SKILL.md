@@ -2,6 +2,7 @@
 name: doubt-qcm-pause
 description: >-
   Met l'IA en pause et pose une question à choix multiples (QCM) à l'utilisateur
+  via le système QCM natif de l'ADE quand il est disponible
   dès qu'un doute, une ambiguïté, un risque de dérive fonctionnelle, un choix
   de design, un conflit de versions, une option métier non tranchée, ou toute
   décision pouvant modifier le périmètre/la qualité du livrable est détecté.
@@ -100,20 +101,45 @@ incorrecte.
 
 ## Format de la question QCM
 
-Utiliser l'outil natif `question` de l'environnement. Structure :
+Utiliser le système QCM natif de l'ADE, jamais un simple paragraphe texte
+quand l'outil est disponible.
 
-1. **Une seule question à la fois** par appel `question`. Ne pas empiler
-   plusieurs décisions dans un même QCM.
-2. **Header (max 30 chars)** : étiquette courte de la catégorie (ex :
+Canal par environnement :
+
+- **Codex App** : appeler l'outil `request_user_input` quand il est présent
+  dans les outils disponibles du tour. Utiliser `questions` avec une seule
+  entrée, `header` de 12 caractères maximum, `id` en `snake_case`, 2 à 3
+  options, première option recommandée, label suffixé par `(Recommended)` pour
+  respecter le schéma de l'outil. Ne pas inclure manuellement l'option
+  `Other` : le client l'ajoute.
+- **OpenCode** : appeler l'outil natif `question` quand il est disponible.
+- **Autres ADE** : appeler le mécanisme QCM natif équivalent si l'outil est
+  exposé.
+- **Outil QCM absent** : ne pas prétendre avoir utilisé l'ADE. Stopper,
+  signaler explicitement que l'outil QCM natif n'est pas disponible dans ce
+  mode/session, puis demander si l'utilisateur accepte un fallback texte ou
+  préfère changer de mode/session. Si la progression est urgente et que
+  l'utilisateur a déjà demandé de poser la question quand même, utiliser un QCM
+  texte comme dégradé explicite.
+
+Structure :
+
+1. **Une seule question à la fois** par appel d'outil QCM natif. Ne pas
+   empiler plusieurs décisions dans un même QCM.
+2. **Header** : étiquette courte de la catégorie (ex :
    "Mixin critique", "Périmètre jalon", "ID item", "Version Forge").
+   Limite Codex App : 12 caractères.
 3. **Question** : phrase complète, terminée par `?`, contexte en 1 phrase
    au-dessus si nécessaire.
-4. **2 à 4 options** : libellé (1-5 mots) + description courte expliquant
-   l'implication technique ou fonctionnelle.
+4. **Options** : 2 à 3 options pour Codex App, 2 à 4 si l'ADE le permet ;
+   libellé 1-5 mots + description courte expliquant l'implication technique
+   ou fonctionnelle.
 5. **Toujours proposer** : une option **"Autre / réponse personnalisée"**
-   (ajoutée automatiquement par l'outil `question`).
+   (ajoutée automatiquement par l'outil QCM natif quand il le supporte).
 6. **Recommandation explicite** : la première option doit être la
-   recommandation de l'agent, marquée **(Recommandé)** en suffixe.
+   recommandation de l'agent. Pour Codex App, suffixer le label par
+   **(Recommended)** ; pour un fallback texte francophone, utiliser
+   **(Recommandé)**.
 
 ### Modèle (voir `references/qcm-template.md`)
 
@@ -143,7 +169,7 @@ technique, fonctionnel ou de risque).
 
 ### Étape 2 — Pré-collecte silencieuse
 
-Avant d'appeler `question`, l'agent doit avoir fait **au minimum** :
+Avant d'appeler l'outil QCM natif, l'agent doit avoir fait **au minimum** :
 
 1. Lu les fichiers locaux concernés (`rg`, lecture ciblée).
 2. Vérifié `.agent/PLAN.md`, `AGENTS.md`, `README.md` pour une décision
@@ -153,14 +179,14 @@ Avant d'appeler `question`, l'agent doit avoir fait **au minimum** :
 4. Construit mentalement 2 à 4 options viables avec leurs implications.
 
 Si la pré-collecte révèle que la question est triviale ou déjà tranchée,
-**ne pas appeler** `question` : appliquer directement et le dire
+**ne pas appeler** l'outil QCM : appliquer directement et le dire
 explicitement.
 
 ### Étape 3 — Question QCM
 
-Appeler l'outil `question` avec une **seule** question structurée. Si
-plusieurs doutes indépendants existent, **les poser en plusieurs
-questions successives**, jamais en un seul gros QCM.
+Appeler l'outil QCM natif avec une **seule** question structurée. Si plusieurs
+doutes indépendants existent, **les poser en plusieurs questions successives**,
+jamais en un seul gros QCM.
 
 ### Étape 4 — Attente
 
@@ -225,7 +251,7 @@ Si l'utilisateur est en colère, pressé, ou contradictoire :
 Voir `references/anti-patterns.md` pour la liste complète. Les plus
 fréquents :
 
-- **Empiler 6 questions dans un seul appel** `question` → l'utilisateur
+- **Empiler 6 questions dans un seul appel** QCM → l'utilisateur
   décroche.
 - **Poser une question alors que la décision est déjà dans AGENTS.md** →
   perte de temps, frustration.

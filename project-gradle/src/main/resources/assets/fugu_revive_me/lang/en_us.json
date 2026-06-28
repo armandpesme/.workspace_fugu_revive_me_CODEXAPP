@@ -1,5 +1,21 @@
 {
   "effect.fugu_revive_me.resurrection_sickness": "Resurrection Sickness",
   "item.fugu_revive_me.return_pendant": "Return Pendant",
-  "item.fugu_revive_me.soul_anchor": "Soul Anchor"
+  "item.fugu_revive_me.soul_anchor": "Soul Anchor",
+  "overlay.fugu_revive_me.ally_revive": "Revive in progress",
+  "overlay.fugu_revive_me.hits": "Hits taken",
+  "overlay.fugu_revive_me.soul_anchor.available": "Anchor: available",
+  "overlay.fugu_revive_me.soul_anchor.casting": "Anchor: channeling",
+  "overlay.fugu_revive_me.soul_anchor.missing": "Anchor: missing",
+  "screen.fugu_revive_me.prolonged_ko.ally_unavailable": "Ally revive: unavailable",
+  "screen.fugu_revive_me.prolonged_ko.anchor_unavailable": "Soul Anchor: unavailable",
+  "screen.fugu_revive_me.prolonged_ko.boss_linked": "Boss linked - status pending",
+  "screen.fugu_revive_me.prolonged_ko.boss_not_linked": "No linked boss",
+  "screen.fugu_revive_me.prolonged_ko.hits": "Hits taken: %s/3",
+  "screen.fugu_revive_me.prolonged_ko.issue": "Outcome: defeat the boss or release spirit",
+  "screen.fugu_revive_me.prolonged_ko.release": "Release Spirit",
+  "screen.fugu_revive_me.prolonged_ko.sent": "Request sent...",
+  "screen.fugu_revive_me.prolonged_ko.state_fully_downed": "Fully downed",
+  "screen.fugu_revive_me.prolonged_ko.state_prolonged": "Prolonged K.O.",
+  "screen.fugu_revive_me.prolonged_ko.title": "Prolonged K.O."
 }

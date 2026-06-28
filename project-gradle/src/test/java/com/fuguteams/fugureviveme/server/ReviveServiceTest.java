@@ -315,7 +315,7 @@ class ReviveServiceTest {
         RecordingSink sink = new RecordingSink();
         UUID player = UUID.randomUUID();
         ReviveService service = new ReviveService(
-                () -> data, () -> 1_000L, new ReviveSyncService(sink));
+                () -> data, () -> 1_000L, new ReviveSyncService(sink), uuid -> OptionalInt.of(77));
         data.put(player, new KoRecord(
                 ReviveState.TEMPORARY_KO, 2_000L, 0,
                 ResourceLocation.parse("minecraft:overworld"), BlockPos.ZERO, Optional.empty()));
@@ -324,8 +324,11 @@ class ReviveServiceTest {
         service.transitionToAlive(player);
 
         assertTrue(data.get(player).isEmpty());
-        assertEquals(1, sink.messages.size());
+        assertEquals(2, sink.messages.size());
         assertInstanceOf(ClientboundReviveSnapshot.class, sink.messages.get(0));
+        ClientboundTrackedKoVisual clearVisual = assertInstanceOf(ClientboundTrackedKoVisual.class, sink.messages.get(1));
+        assertEquals(77, clearVisual.entityId());
+        assertEquals(ReviveState.ALIVE, clearVisual.state());
     }
 
     @Test

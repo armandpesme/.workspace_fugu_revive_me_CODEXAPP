@@ -1,14 +1,17 @@
 interface:
   display_name: "Doubt QCM Pause"
-  short_description: "Met l'IA en pause et pose une question à choix multiples dès qu'un doute matériel est détecté."
+  short_description: "Met l'IA en pause et utilise le QCM natif de l'ADE dès qu'un doute matériel est détecté."
   brand_color: "#F59E0B"
   default_prompt: |
     Utilise $doubt-qcm-pause.
 
     Avant toute action à doute ou avant une décision irréversible, mets-toi
-    en pause et pose-moi une question à choix multiples structurée (1
-    question à la fois, 2-4 options, une option marquée Recommandé). Une
-    fois ma réponse obtenue, trace la décision dans .agent/PLAN.md et reprends.
+    en pause et utilise le système QCM natif de l'ADE. Dans Codex App,
+    appelle request_user_input quand il est disponible : 1 question à la
+    fois, 2-3 options, première option recommandée. Si l'outil QCM natif est
+    absent, signale la limitation au lieu de prétendre l'avoir utilisé.
+    Une fois ma réponse obtenue, trace la décision dans .agent/PLAN.md et
+    reprends.
 
 policy:
   allow_implicit_invocation: true

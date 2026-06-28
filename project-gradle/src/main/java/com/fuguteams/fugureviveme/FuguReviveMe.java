@@ -8,10 +8,12 @@ import com.fuguteams.fugureviveme.server.FuguKnockoutRuntime;
 import com.fuguteams.fugureviveme.server.KoEventHandlers;
 import com.fuguteams.fugureviveme.server.ServerConfigRuntime;
 import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -26,6 +28,7 @@ public final class FuguReviveMe {
         ModEffects.register(modEventBus);
         ServerConfigRuntime.register(modEventBus);
         FuguNetwork.register();
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> registerClient(modEventBus));
         context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
         IEventBus forgeBus = MinecraftForge.EVENT_BUS;
         forgeBus.register(FuguReviveMe.class);
@@ -36,5 +39,14 @@ public final class FuguReviveMe {
     public static void onServerStarted(ServerStartedEvent event) {
         MinecraftServer server = event.getServer();
         FuguKnockoutRuntime.init(server);
+    }
+
+    private static void registerClient(IEventBus modEventBus) {
+        try {
+            Class<?> clientEvents = Class.forName("com.fuguteams.fugureviveme.client.FuguClientEvents");
+            clientEvents.getMethod("register", IEventBus.class).invoke(null, modEventBus);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to register Fugu Revive Me client events", exception);
+        }
     }
 }

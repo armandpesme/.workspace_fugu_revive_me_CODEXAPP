@@ -176,7 +176,13 @@ public final class ReviveService {
             return;
         }
         savedData.transitionToAlive(playerUuid);
-        sync.sendSelf(playerUuid, Optional.empty(), overworldClock.getAsLong());
+        long now = overworldClock.getAsLong();
+        OptionalInt entityId = entityIdLookup.apply(playerUuid);
+        if (entityId.isPresent()) {
+            sync.publishAlive(playerUuid, entityId.getAsInt(), now);
+        } else {
+            sync.sendSelf(playerUuid, Optional.empty(), now);
+        }
     }
 
     public void updateRecord(UUID playerUuid, KoRecord record) {

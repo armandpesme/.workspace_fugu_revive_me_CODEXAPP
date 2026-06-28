@@ -25,6 +25,11 @@ public final class ReviveSyncService {
         sink.sendTracking(playerUuid, visual(entityId, record.state()));
     }
 
+    public void publishAlive(UUID playerUuid, int entityId, long serverGameTime) {
+        sink.sendSelf(playerUuid, aliveSnapshot(serverGameTime));
+        sink.sendTracking(playerUuid, visual(entityId, ReviveState.ALIVE));
+    }
+
     public void sendSelf(UUID playerUuid, Optional<KoRecord> record, long serverGameTime) {
         sink.sendSelf(playerUuid, record
                 .map(value -> snapshot(value, serverGameTime))

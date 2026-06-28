@@ -86,7 +86,7 @@ suffixe fait gagner du temps.
 
 ❌ Mauvais : 6 options, l'utilisateur hésite 10 minutes.
 
-✅ Bon : 2-4 options, le reste en "Autre / réponse personnalisée".
+✅ Bon : 2-3 options dans Codex App, 2-4 ailleurs si l'ADE le permet, le reste en "Autre / réponse personnalisée".
 
 **Pourquoi** : au-delà de 4, la charge cognitive explose.
 

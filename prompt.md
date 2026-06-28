@@ -552,3 +552,63 @@ Toutes les morts définitives envoient le joueur au spawn de mort générique co
 Le pendentif téléporte vers le spawn vanilla du joueur, uniquement depuis la dimension principale.
 
 Le mod ne touche pas à l’inventaire, l’XP, les drops ou l’économie de mort vanilla.
+
+
+## SFX / VFX de résurrection
+
+Chaque résurrection réussie doit déclencher un feedback visuel et sonore clair.
+
+Sources possibles de résurrection :
+
+- résurrection par un allié ;
+- résurrection automatique après défaite du boss lié en K.O. prolongé ;
+- auto-résurrection via l’Ancre d’Âme.
+
+Le mod doit utiliser un effet de résurrection commun pour garantir une identité visuelle cohérente.
+
+### Effet commun recommandé
+
+Quand le joueur est ressuscité :
+
+- particules lumineuses autour du joueur ;
+- effet vertical léger, comme une remontée d’âme ;
+- flash doux au sol ;
+- son de résurrection court et identifiable ;
+- animation ou transition de relèvement si possible ;
+- disparition de l’overlay K.O. ;
+- application du Mal de résurrection.
+
+### Variantes selon la source
+
+#### Résurrection par allié
+
+- effet commun de résurrection ;
+- léger lien visuel entre l’allié et le joueur relevé ;
+- son de soin / aide.
+
+#### Résurrection par boss vaincu
+
+- effet commun de résurrection ;
+- variante plus large ou plus solennelle ;
+- particules spirituelles ou dorées ;
+- impression de victoire / libération.
+
+#### Résurrection par Ancre d’Âme
+
+- effet commun de résurrection ;
+- variante plus personnelle ;
+- particules centrées sur le joueur ;
+- effet autour de l’item ou de la hotbar ;
+- son plus mystique ou cristallin.
+
+### Recommandation V1
+
+Pour la V1, utiliser le même SFX/VFX de base pour les trois cas, avec seulement une variation légère si simple à faire.
+
+Priorité :
+
+1. effet visible et compréhensible ;
+2. pas trop coûteux ;
+3. pas de dépendance lourde ;
+4. rendu compatible multijoueur ;
+5. pas d’assets complexes obligatoires.

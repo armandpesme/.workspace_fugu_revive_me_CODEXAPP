@@ -34,9 +34,15 @@ Ressource | URL |
 
 ## Objectifs
 
+Read `prompt.md` pour les objectifs de la tâche.
+
 ## Contexte
 
+Read `prompt.md` pour le contexte de la tâche.
+
 ## Contraintes
+
+Read `prompt.md` pour les contraintes de la tâche.
 
 ## Conditions d’acceptation
 

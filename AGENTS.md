@@ -99,7 +99,7 @@ Si l’agent continue sans poser de question, il doit documenter la décision pr
 
 Les fichiers suivants sont des sources de vérité et ne doivent pas être modifiés automatiquement par l’agent :
 
-* `FUGU_REVIVE_ME_DESIGN.md`
+* `DESIGNE.md`
 * `AGENTS.md`
 * `README.md`
 
